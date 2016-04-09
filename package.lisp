@@ -1,2 +1,7 @@
+(defpackage #:euler.utils
+  (:use #:cl #:euler.quickutils)
+  (:export
+    #:dividesp))
+
 (defpackage #:euler
-  (:use #:cl #:euler.utilities))
+  (:use #:cl #:euler.quickutils #:euler.utils))

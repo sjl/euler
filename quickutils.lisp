@@ -2,20 +2,20 @@
 ;;;; See http://quickutil.org for details.
 
 ;;;; To regenerate:
-;;;; (qtlc:save-utils-as "utilities.lisp" :utilities '(:DEFINE-CONSTANT :SWITCH :ENSURE-BOOLEAN :WITH-GENSYMS) :ensure-package T :package "EULER.UTILITIES")
+;;;; (qtlc:save-utils-as "quickutils.lisp" :utilities '(:DEFINE-CONSTANT :SWITCH :WHILE :ENSURE-BOOLEAN :WITH-GENSYMS) :ensure-package T :package "EULER.QUICKUTILS")
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (unless (find-package "EULER.UTILITIES")
-    (defpackage "EULER.UTILITIES"
+  (unless (find-package "EULER.QUICKUTILS")
+    (defpackage "EULER.QUICKUTILS"
       (:documentation "Package that contains Quickutil utility functions.")
       (:use #:cl))))
 
-(in-package "EULER.UTILITIES")
+(in-package "EULER.QUICKUTILS")
 
 (when (boundp '*utilities*)
   (setf *utilities* (union *utilities* '(:DEFINE-CONSTANT :STRING-DESIGNATOR
                                          :WITH-GENSYMS :EXTRACT-FUNCTION-NAME
-                                         :SWITCH :ENSURE-BOOLEAN))))
+                                         :SWITCH :UNTIL :WHILE :ENSURE-BOOLEAN))))
 
   (defun %reevaluate-constant (name value test)
     (if (not (boundp name))
@@ -148,12 +148,25 @@ returns the values of `default` if no keys match."
     (generate-switch-body whole object clauses test key '(cerror "Return NIL from CSWITCH.")))
   
 
+  (defmacro until (expression &body body)
+    "Executes `body` until `expression` is true."
+    `(do ()
+         (,expression)
+       ,@body))
+  
+
+  (defmacro while (expression &body body)
+    "Executes `body` while `expression` is true."
+    `(until (not ,expression)
+       ,@body))
+  
+
   (defun ensure-boolean (x)
     "Convert `x` into a Boolean value."
     (and x t))
   
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (export '(define-constant switch eswitch cswitch ensure-boolean with-gensyms
-            with-unique-names)))
+  (export '(define-constant switch eswitch cswitch while ensure-boolean
+            with-gensyms with-unique-names)))
 
-;;;; END OF utilities.lisp ;;;;
+;;;; END OF quickutils.lisp ;;;;

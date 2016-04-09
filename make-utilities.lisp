@@ -1,10 +1,11 @@
 (ql:quickload 'quickutil)
 
 (qtlc:save-utils-as
-  "utilities.lisp"
+  "quickutils.lisp"
   :utilities '(:define-constant
                :switch
+               :while
                :ensure-boolean
                :with-gensyms
                )
-  :package "EULER.UTILITIES")
+  :package "EULER.QUICKUTILS")

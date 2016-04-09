@@ -16,7 +16,9 @@
                #:fare-quasiquote-readtable)
 
   :serial t
-  :components ((:file "utilities") ; quickutils package ordering crap
+  :components ((:file "quickutils") ; quickutils package ordering crap
                (:file "package")
+               (:file "utils")
+               (:file "primes")
                (:file "euler")))
 

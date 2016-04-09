@@ -1,9 +1,5 @@
 (in-package #:euler)
 
-(defun dividesp (n divisor)
-  "Return whether `n` is evenly divisible by `divisor`."
-  (zerop (mod n divisor)))
-
 (defun problem-1 ()
   (loop :for i :from 1 :below 1000
         :when (or (dividesp i 3)
@@ -18,3 +14,5 @@
         :do (psetf p n
                    n (+ p n))))
 
+(defun problem-3 ()
+  (apply #'max (prime-factorization 600851475143)))
