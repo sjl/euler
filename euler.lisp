@@ -1,5 +1,33 @@
 (in-package #:euler)
 
+;;;;
+(defun digits (n)
+  "Return how many digits `n` has in base 10."
+  (values (truncate (1+ (log n 10)))))
+
+(defun definitely-palindrome-p (n)
+  "Return whether `n` is a palindrome (in base 10), the slow-but-sure way."
+  (let ((s (format nil "~D" n)))
+    (string= s (reverse s))))
+
+(defun palindrome-p (n)
+  "Return whether `n` is a palindrome (in base 10)."
+  (assert (>= n 0) (n) "~A must be a non-negative integer" n)
+  ;; All even-length base-10 palindromes are divisible by 11, so we can shortcut
+  ;; the awful string comparison. E.g.:
+  ;;
+  ;;   abccba =
+  ;;   100001 * a +
+  ;;   010010 * b +
+  ;;   001100 * c
+  (cond
+    ((zerop n) t)
+    ((and (evenp (digits n))
+          (not (dividesp n 11))) nil)
+    (t (definitely-palindrome-p n))))
+
+
+;;;; Problems
 (defun problem-1 ()
   ;; If we list all the natural numbers below 10 that are multiples of 3 or 5,
   ;; we get 3, 5, 6 and 9. The sum of these multiples is 23.
@@ -30,3 +58,16 @@
   ;;
   ;; What is the largest prime factor of the number 600851475143 ?
   (apply #'max (prime-factorization 600851475143)))
+
+(defun problem-4 ()
+  ;; A palindromic number reads the same both ways. The largest palindrome made
+  ;; from the product of two 2-digit numbers is 9009 = 91 × 99.
+  ;;
+  ;; Find the largest palindrome made from the product of two 3-digit numbers.
+  (let ((result (list)))
+    (loop :for i :from 0 :to 999
+          :do (loop :for j :from 0 :to 999
+                    :for product = (* i j)
+                    :when (palindrome-p product)
+                    :do (push product result)))
+    (apply #'max result)))
