@@ -30,6 +30,9 @@
   (loop :for i :from from :below below
         :collect i))
 
+(defun square (n)
+  (* n n))
+
 
 ;;;; Problems
 (defun problem-1 ()
@@ -100,3 +103,24 @@
           :when (every (lambda (n) (dividesp i n))
                        divisors)
           :return i)))
+
+(defun problem-6 ()
+  ;; The sum of the squares of the first ten natural numbers is,
+  ;;   1^2 + 2^2 + ... + 10^2 = 385
+  ;;
+  ;; The square of the sum of the first ten natural numbers is,
+  ;;   (1 + 2 + ... + 10)^2 = 55^2 = 3025
+  ;;
+  ;; Hence the difference between the sum of the squares of the first ten
+  ;; natural numbers and the square of the sum is 3025 − 385 = 2640.
+  ;;
+  ;; Find the difference between the sum of the squares of the first one hundred
+  ;; natural numbers and the square of the sum.
+  (flet ((sum-of-squares (to)
+           (loop :for i :from 1 :to to
+                 :sum (square i)))
+         (square-of-sum (to)
+           (square (loop :for i :from 1 :to to
+                         :sum i))))
+    (abs (- (sum-of-squares 100) ; apparently it wants the absolute value
+            (square-of-sum 100)))))
