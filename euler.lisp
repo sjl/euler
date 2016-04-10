@@ -134,6 +134,16 @@
    (loop :for window :in (n-grams 13 digits)
          :maximize (apply #'* window))))
 
+(defun problem-9 ()
+  (flet ((pythagorean-triplet-p (a b c)
+           (= (+ (square a) (square b))
+              (square c))))
+    (block search
+      (loop :for c :from 998 :downto 1 ; they must add up to 1000, so C can be at most 998
+            :do (loop :for a :from (- 999 c) :downto 1 ; A can be at most 999 - C (to leave 1 for B)
+                      :for b = (- 1000 c a)
+                      :when (pythagorean-triplet-p a b c)
+                      :do (return-from search (* a b c)))))))
 
 ;;;; Tests
 (def-suite :euler)
@@ -147,6 +157,7 @@
 (test p6 (is (= 25164150 (problem-6))))
 (test p7 (is (= 104743 (problem-7))))
 (test p8 (is (= 23514624000 (problem-8))))
+(test p9 (is (= 31875000 (problem-9))))
 
 
 ; (run! :euler)
