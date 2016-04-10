@@ -9,6 +9,7 @@
   :version "0.0.1"
 
   :depends-on (#:defstar
+               #:fiveam
                #:optima
                #:trivial-types
                #:cl-arrows

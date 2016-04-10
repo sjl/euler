@@ -124,3 +124,20 @@
                          :sum i))))
     (abs (- (sum-of-squares 100) ; apparently it wants the absolute value
             (square-of-sum 100)))))
+
+(defun problem-7 ()
+  (nth-prime 10001))
+
+;;;; Tests
+(def-suite :euler)
+(in-suite :euler)
+
+(test p1 (is (= 233168 (problem-1))))
+(test p2 (is (= 4613732 (problem-2))))
+(test p3 (is (= 6857 (problem-3))))
+(test p4 (is (= 906609 (problem-4))))
+(test p5 (is (= 232792560 (problem-5))))
+(test p6 (is (= 25164150 (problem-6))))
+(test p7 (is (= 104743 (problem-7))))
+
+; (run! :euler)
