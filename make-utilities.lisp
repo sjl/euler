@@ -7,5 +7,6 @@
                :while
                :ensure-boolean
                :with-gensyms
+               :n-grams
                )
   :package "EULER.QUICKUTILS")

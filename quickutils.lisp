@@ -2,7 +2,7 @@
 ;;;; See http://quickutil.org for details.
 
 ;;;; To regenerate:
-;;;; (qtlc:save-utils-as "quickutils.lisp" :utilities '(:DEFINE-CONSTANT :SWITCH :WHILE :ENSURE-BOOLEAN :WITH-GENSYMS) :ensure-package T :package "EULER.QUICKUTILS")
+;;;; (qtlc:save-utils-as "quickutils.lisp" :utilities '(:DEFINE-CONSTANT :SWITCH :WHILE :ENSURE-BOOLEAN :WITH-GENSYMS :N-GRAMS) :ensure-package T :package "EULER.QUICKUTILS")
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (unless (find-package "EULER.QUICKUTILS")
@@ -15,7 +15,8 @@
 (when (boundp '*utilities*)
   (setf *utilities* (union *utilities* '(:DEFINE-CONSTANT :STRING-DESIGNATOR
                                          :WITH-GENSYMS :EXTRACT-FUNCTION-NAME
-                                         :SWITCH :UNTIL :WHILE :ENSURE-BOOLEAN))))
+                                         :SWITCH :UNTIL :WHILE :ENSURE-BOOLEAN
+                                         :TAKE :N-GRAMS))))
 
   (defun %reevaluate-constant (name value test)
     (if (not (boundp name))
@@ -165,8 +166,29 @@ returns the values of `default` if no keys match."
     "Convert `x` into a Boolean value."
     (and x t))
   
+
+  (defun take (n sequence)
+    "Take the first `n` elements from `sequence`."
+    (subseq sequence 0 n))
+  
+
+  (defun n-grams (n sequence)
+    "Find all `n`-grams of the sequence `sequence`."
+    (assert (and (plusp n)
+                 (<= n (length sequence))))
+    
+    (etypecase sequence
+      ;; Lists
+      (list (loop :repeat (1+ (- (length sequence) n))
+                  :for seq :on sequence
+                  :collect (take n seq)))
+      
+      ;; General sequences
+      (sequence (loop :for i :to (- (length sequence) n)
+                      :collect (subseq sequence i (+ i n))))))
+  
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (export '(define-constant switch eswitch cswitch while ensure-boolean
-            with-gensyms with-unique-names)))
+            with-gensyms with-unique-names n-grams)))
 
 ;;;; END OF quickutils.lisp ;;;;
