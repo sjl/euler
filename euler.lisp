@@ -26,6 +26,10 @@
           (not (dividesp n 11))) nil)
     (t (definitely-palindrome-p n))))
 
+(defun range (from below)
+  (loop :for i :from from :below below
+        :collect i))
+
 
 ;;;; Problems
 (defun problem-1 ()
@@ -71,3 +75,28 @@
                     :when (palindrome-p product)
                     :do (push product result)))
     (apply #'max result)))
+
+(defun problem-5 ()
+  ;; 2520 is the smallest number that can be divided by each of the numbers from
+  ;; 1 to 10 without any remainder.
+  ;;
+  ;; What is the smallest positive number that is evenly divisible by all of the
+  ;; numbers from 1 to 20?
+  (let ((divisors (range 11 21)))
+    ;; all numbers are divisible by 1 and we can skip checking everything <= 10
+    ;; because:
+    ;;
+    ;; anything divisible by 12 is automatically divisible by 2
+    ;; anything divisible by 12 is automatically divisible by 3
+    ;; anything divisible by 12 is automatically divisible by 4
+    ;; anything divisible by 15 is automatically divisible by 5
+    ;; anything divisible by 12 is automatically divisible by 6
+    ;; anything divisible by 14 is automatically divisible by 7
+    ;; anything divisible by 16 is automatically divisible by 8
+    ;; anything divisible by 18 is automatically divisible by 9
+    ;; anything divisible by 20 is automatically divisible by 10
+    (loop :for i
+          :from 20 :by 20 ; it must be divisible by 20
+          :when (every (lambda (n) (dividesp i n))
+                       divisors)
+          :return i)))
