@@ -8,3 +8,8 @@
   "Return whether `n` is evenly divisible by `divisor`."
   (zerop (mod n divisor)))
 
+
+(defmacro repeat (n &body body)
+  "Repeat `body` `n` times."
+  `(dotimes (,(gensym) ,n)
+     ,@body))

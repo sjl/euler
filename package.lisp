@@ -2,6 +2,7 @@
   (:use #:cl #:euler.quickutils)
   (:export
     #:random-exclusive
+    #:repeat
     #:dividesp))
 
 (defpackage #:euler

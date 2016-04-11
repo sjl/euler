@@ -145,6 +145,11 @@
                       :when (pythagorean-triplet-p a b c)
                       :do (return-from search (* a b c)))))))
 
+(defun problem-10 ()
+  (loop :for p :in (primes-below 2000000)
+        :sum p))
+
+
 ;;;; Tests
 (def-suite :euler)
 (in-suite :euler)
@@ -158,6 +163,7 @@
 (test p7 (is (= 104743 (problem-7))))
 (test p8 (is (= 23514624000 (problem-8))))
 (test p9 (is (= 31875000 (problem-9))))
+(test p10 (is (= 142913828922 (problem-10))))
 
 
 ; (run! :euler)
