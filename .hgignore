@@ -7,3 +7,5 @@ syntax: glob
 *.un~
 .ropeproject
 tags
+scratch.lisp
+scratch.lisp
