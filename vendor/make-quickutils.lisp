@@ -5,10 +5,11 @@
   :utilities '(
 
                :define-constant
-               :switch
                :ensure-boolean
-               :with-gensyms
                :n-grams
+               :range
+               :switch
+               :with-gensyms
 
                )
   :package "EULER.QUICKUTILS")

@@ -71,7 +71,7 @@
   (flet ((fermat-check (a)
            (= (expmod a n n) a)))
     (loop :repeat tests
-          :when (not (fermat-check (random-exclusive 0 n)))
+          :when (not (fermat-check (random-range-exclusive 0 n)))
           :do (return nil)
           :finally (return t))))
 
@@ -112,7 +112,7 @@
                               :when (= y (1- n))
                               :do (return t))))))
            (loop :repeat k
-                 :for a = (random-exclusive 1 (1- n))
+                 :for a = (random-range-exclusive 1 (1- n))
                  :always (strong-liar-p a)))))))
 
 (defun brute-force-prime-p (n)

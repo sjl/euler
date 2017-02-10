@@ -2,7 +2,7 @@
 ;;;; See http://quickutil.org for details.
 
 ;;;; To regenerate:
-;;;; (qtlc:save-utils-as "quickutils.lisp" :utilities '(:DEFINE-CONSTANT :SWITCH :ENSURE-BOOLEAN :WITH-GENSYMS :N-GRAMS) :ensure-package T :package "EULER.QUICKUTILS")
+;;;; (qtlc:save-utils-as "quickutils.lisp" :utilities '(:DEFINE-CONSTANT :ENSURE-BOOLEAN :N-GRAMS :RANGE :SWITCH :WITH-GENSYMS) :ensure-package T :package "EULER.QUICKUTILS")
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (unless (find-package "EULER.QUICKUTILS")
@@ -13,9 +13,10 @@
 (in-package "EULER.QUICKUTILS")
 
 (when (boundp '*utilities*)
-  (setf *utilities* (union *utilities* '(:DEFINE-CONSTANT :STRING-DESIGNATOR
+  (setf *utilities* (union *utilities* '(:DEFINE-CONSTANT :ENSURE-BOOLEAN :TAKE
+                                         :N-GRAMS :RANGE :STRING-DESIGNATOR
                                          :WITH-GENSYMS :EXTRACT-FUNCTION-NAME
-                                         :SWITCH :ENSURE-BOOLEAN :TAKE :N-GRAMS))))
+                                         :SWITCH))))
 
   (defun %reevaluate-constant (name value test)
     (if (not (boundp name))
@@ -52,6 +53,40 @@ Signals an error if `name` is already a constant variable whose value is not
 equal under `test` to result of evaluating `initial-value`."
     `(defconstant ,name (%reevaluate-constant ',name ,initial-value ,test)
        ,@(when documentation `(,documentation))))
+  
+
+  (defun ensure-boolean (x)
+    "Convert `x` into a Boolean value."
+    (and x t))
+  
+
+  (defun take (n sequence)
+    "Take the first `n` elements from `sequence`."
+    (subseq sequence 0 n))
+  
+
+  (defun n-grams (n sequence)
+    "Find all `n`-grams of the sequence `sequence`."
+    (assert (and (plusp n)
+                 (<= n (length sequence))))
+    
+    (etypecase sequence
+      ;; Lists
+      (list (loop :repeat (1+ (- (length sequence) n))
+                  :for seq :on sequence
+                  :collect (take n seq)))
+      
+      ;; General sequences
+      (sequence (loop :for i :to (- (length sequence) n)
+                      :collect (subseq sequence i (+ i n))))))
+  
+
+  (defun range (start end &key (step 1) (key 'identity))
+    "Return the list of numbers `n` such that `start <= n < end` and
+`n = start + k*step` for suitable integers `k`. If a function `key` is
+provided, then apply it to each number."
+    (assert (<= start end))
+    (loop :for i :from start :below end :by step :collecting (funcall key i)))
   
 
   (deftype string-designator ()
@@ -147,34 +182,8 @@ returns the values of `default` if no keys match."
     "Like `switch`, but signals a continuable error if no key matches."
     (generate-switch-body whole object clauses test key '(cerror "Return NIL from CSWITCH.")))
   
-
-  (defun ensure-boolean (x)
-    "Convert `x` into a Boolean value."
-    (and x t))
-  
-
-  (defun take (n sequence)
-    "Take the first `n` elements from `sequence`."
-    (subseq sequence 0 n))
-  
-
-  (defun n-grams (n sequence)
-    "Find all `n`-grams of the sequence `sequence`."
-    (assert (and (plusp n)
-                 (<= n (length sequence))))
-    
-    (etypecase sequence
-      ;; Lists
-      (list (loop :repeat (1+ (- (length sequence) n))
-                  :for seq :on sequence
-                  :collect (take n seq)))
-      
-      ;; General sequences
-      (sequence (loop :for i :to (- (length sequence) n)
-                      :collect (subseq sequence i (+ i n))))))
-  
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (export '(define-constant switch eswitch cswitch ensure-boolean with-gensyms
-            with-unique-names n-grams)))
+  (export '(define-constant ensure-boolean n-grams range switch eswitch cswitch
+            with-gensyms with-unique-names)))
 
 ;;;; END OF quickutils.lisp ;;;;
