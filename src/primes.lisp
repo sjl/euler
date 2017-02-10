@@ -1,4 +1,4 @@
-(in-package #:euler)
+(in-package :euler)
 
 (define-constant carmichael-numbers ; from oeis
   '(561 1105 1729 2465 2821 6601 8911 10585 15841 29341 41041 46657 52633
@@ -10,13 +10,13 @@
   "Return the prime factors of `n`."
   ;; from http://www.geeksforgeeks.org/print-all-prime-factors-of-a-given-number/
   (let ((result (list)))
-    (while (evenp n) ; handle 2, the only even prime factor
-      (push 2 result)
-      (setf n (/ n 2)))
+    (iterate (while (evenp n)) ; handle 2, the only even prime factor
+             (push 2 result)
+             (setf n (/ n 2)))
     (loop :for i :from 3 :to (sqrt n) :by 2 ; handle odd (prime) divisors
-          :do (while (dividesp n i)
-                (push i result)
-                (setf n (/ n i))))
+          :do (iterate (while (dividesp n i))
+                       (push i result)
+                       (setf n (/ n i))))
     (when (> n 2) ; final check in case we ended up with a prime
       (push n result))
     (nreverse result)))

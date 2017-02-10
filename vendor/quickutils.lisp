@@ -2,7 +2,7 @@
 ;;;; See http://quickutil.org for details.
 
 ;;;; To regenerate:
-;;;; (qtlc:save-utils-as "quickutils.lisp" :utilities '(:DEFINE-CONSTANT :SWITCH :WHILE :ENSURE-BOOLEAN :WITH-GENSYMS :N-GRAMS) :ensure-package T :package "EULER.QUICKUTILS")
+;;;; (qtlc:save-utils-as "quickutils.lisp" :utilities '(:DEFINE-CONSTANT :SWITCH :ENSURE-BOOLEAN :WITH-GENSYMS :N-GRAMS) :ensure-package T :package "EULER.QUICKUTILS")
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (unless (find-package "EULER.QUICKUTILS")
@@ -15,8 +15,7 @@
 (when (boundp '*utilities*)
   (setf *utilities* (union *utilities* '(:DEFINE-CONSTANT :STRING-DESIGNATOR
                                          :WITH-GENSYMS :EXTRACT-FUNCTION-NAME
-                                         :SWITCH :UNTIL :WHILE :ENSURE-BOOLEAN
-                                         :TAKE :N-GRAMS))))
+                                         :SWITCH :ENSURE-BOOLEAN :TAKE :N-GRAMS))))
 
   (defun %reevaluate-constant (name value test)
     (if (not (boundp name))
@@ -149,19 +148,6 @@ returns the values of `default` if no keys match."
     (generate-switch-body whole object clauses test key '(cerror "Return NIL from CSWITCH.")))
   
 
-  (defmacro until (expression &body body)
-    "Executes `body` until `expression` is true."
-    `(do ()
-         (,expression)
-       ,@body))
-  
-
-  (defmacro while (expression &body body)
-    "Executes `body` while `expression` is true."
-    `(until (not ,expression)
-       ,@body))
-  
-
   (defun ensure-boolean (x)
     "Convert `x` into a Boolean value."
     (and x t))
@@ -188,7 +174,7 @@ returns the values of `default` if no keys match."
                       :collect (subseq sequence i (+ i n))))))
   
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (export '(define-constant switch eswitch cswitch while ensure-boolean
-            with-gensyms with-unique-names n-grams)))
+  (export '(define-constant switch eswitch cswitch ensure-boolean with-gensyms
+            with-unique-names n-grams)))
 
 ;;;; END OF quickutils.lisp ;;;;

@@ -8,18 +8,25 @@
   :license "MIT/X11"
   :version "0.0.1"
 
-  :depends-on (#:defstar
-               #:fiveam
-               #:optima
-               #:trivial-types
-               #:cl-arrows
-               #:fare-quasiquote-optima
-               #:fare-quasiquote-readtable)
+  :depends-on (
+
+               :fare-quasiquote-optima
+               :fare-quasiquote-readtable
+               :fiveam
+               :iterate
+               :losh
+               :optima
+               :trivial-types
+
+               )
 
   :serial t
-  :components ((:file "quickutils") ; quickutils package ordering crap
+  :components (
+               (:module "vendor" :serial t
+                :components ((:file "quickutils-package")
+                             (:file "quickutils")))
                (:file "package")
-               (:file "utils")
-               (:file "primes")
-               (:file "euler")))
+               (:module "src" :serial t
+                :components ((:file "primes")
+                             (:file "euler")))))
 

@@ -1,7 +1,8 @@
-.PHONY: test
+.PHONY: vendor
 
-quickutils.lisp: make-utilities.lisp
-	sbcl-rlwrap --noinform --load make-utilities.lisp  --eval '(quit)'
 
-test:
-	sbcl-rlwrap --noinform --load run-tests.lisp  --eval '(quit)'
+# Vendor ----------------------------------------------------------------------
+vendor/quickutils.lisp: vendor/make-quickutils.lisp
+	cd vendor && sbcl --noinform --load make-quickutils.lisp  --eval '(quit)'
+
+vendor: vendor/quickutils.lisp

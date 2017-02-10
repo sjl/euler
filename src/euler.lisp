@@ -1,6 +1,6 @@
-(in-package #:euler)
+(in-package :euler)
 
-;;;;
+;;;; Utils --------------------------------------------------------------------
 (defun digits (n)
   "Return how many digits `n` has in base 10."
   (values (truncate (1+ (log n 10)))))
@@ -34,7 +34,15 @@
   (* n n))
 
 
-;;;; Problems
+(defun random-exclusive (min max)
+  "Return an integer in the range (`min`, `max`)."
+  (+ 1 min (random (- max min 1))))
+(defun dividesp (n divisor)
+  "Return whether `n` is evenly divisible by `divisor`."
+  (zerop (mod n divisor)))
+
+
+;;;; Problems -----------------------------------------------------------------
 (defun problem-1 ()
   ;; If we list all the natural numbers below 10 that are multiples of 3 or 5,
   ;; we get 3, 5, 6 and 9. The sum of these multiples is 23.
@@ -150,7 +158,7 @@
         :sum p))
 
 
-;;;; Tests
+;;;; Tests --------------------------------------------------------------------
 (def-suite :euler)
 (in-suite :euler)
 

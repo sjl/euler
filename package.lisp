@@ -1,10 +1,7 @@
-(defpackage #:euler.utils
-  (:use #:cl #:euler.quickutils)
-  (:export
-    #:random-exclusive
-    #:repeat
-    #:dividesp))
-
-(defpackage #:euler
-  (:use #:cl #:5am
-        #:euler.quickutils #:euler.utils))
+(defpackage :euler
+  (:use :cl
+        :iterate
+        :losh
+        :5am
+        :euler.quickutils)
+  (:shadowing-import-from :5am :test))
