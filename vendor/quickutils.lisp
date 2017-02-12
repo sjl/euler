@@ -2,7 +2,7 @@
 ;;;; See http://quickutil.org for details.
 
 ;;;; To regenerate:
-;;;; (qtlc:save-utils-as "quickutils.lisp" :utilities '(:DEFINE-CONSTANT :ENSURE-BOOLEAN :N-GRAMS :RANGE :SWITCH :WITH-GENSYMS) :ensure-package T :package "EULER.QUICKUTILS")
+;;;; (qtlc:save-utils-as "quickutils.lisp" :utilities '(:CURRY :DEFINE-CONSTANT :ENSURE-BOOLEAN :N-GRAMS :RANGE :RCURRY :SWITCH :WITH-GENSYMS) :ensure-package T :package "EULER.QUICKUTILS")
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (unless (find-package "EULER.QUICKUTILS")
@@ -13,10 +13,55 @@
 (in-package "EULER.QUICKUTILS")
 
 (when (boundp '*utilities*)
-  (setf *utilities* (union *utilities* '(:DEFINE-CONSTANT :ENSURE-BOOLEAN :TAKE
-                                         :N-GRAMS :RANGE :STRING-DESIGNATOR
+  (setf *utilities* (union *utilities* '(:MAKE-GENSYM-LIST :ENSURE-FUNCTION
+                                         :CURRY :DEFINE-CONSTANT
+                                         :ENSURE-BOOLEAN :TAKE :N-GRAMS :RANGE
+                                         :RCURRY :STRING-DESIGNATOR
                                          :WITH-GENSYMS :EXTRACT-FUNCTION-NAME
                                          :SWITCH))))
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (defun make-gensym-list (length &optional (x "G"))
+    "Returns a list of `length` gensyms, each generated as if with a call to `make-gensym`,
+using the second (optional, defaulting to `\"G\"`) argument."
+    (let ((g (if (typep x '(integer 0)) x (string x))))
+      (loop repeat length
+            collect (gensym g))))
+  )                                        ; eval-when
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  ;;; To propagate return type and allow the compiler to eliminate the IF when
+  ;;; it is known if the argument is function or not.
+  (declaim (inline ensure-function))
+
+  (declaim (ftype (function (t) (values function &optional))
+                  ensure-function))
+  (defun ensure-function (function-designator)
+    "Returns the function designated by `function-designator`:
+if `function-designator` is a function, it is returned, otherwise
+it must be a function name and its `fdefinition` is returned."
+    (if (functionp function-designator)
+        function-designator
+        (fdefinition function-designator)))
+  )                                        ; eval-when
+
+  (defun curry (function &rest arguments)
+    "Returns a function that applies `arguments` and the arguments
+it is called with to `function`."
+    (declare (optimize (speed 3) (safety 1) (debug 1)))
+    (let ((fn (ensure-function function)))
+      (lambda (&rest more)
+        (declare (dynamic-extent more))
+        ;; Using M-V-C we don't need to append the arguments.
+        (multiple-value-call fn (values-list arguments) (values-list more)))))
+
+  (define-compiler-macro curry (function &rest arguments)
+    (let ((curries (make-gensym-list (length arguments) "CURRY"))
+          (fun (gensym "FUN")))
+      `(let ((,fun (ensure-function ,function))
+             ,@(mapcar #'list curries arguments))
+         (declare (optimize (speed 3) (safety 1) (debug 1)))
+         (lambda (&rest more)
+           (apply ,fun ,@curries more)))))
+  
 
   (defun %reevaluate-constant (name value test)
     (if (not (boundp name))
@@ -87,6 +132,16 @@ equal under `test` to result of evaluating `initial-value`."
 provided, then apply it to each number."
     (assert (<= start end))
     (loop :for i :from start :below end :by step :collecting (funcall key i)))
+  
+
+  (defun rcurry (function &rest arguments)
+    "Returns a function that applies the arguments it is called
+with and `arguments` to `function`."
+    (declare (optimize (speed 3) (safety 1) (debug 1)))
+    (let ((fn (ensure-function function)))
+      (lambda (&rest more)
+        (declare (dynamic-extent more))
+        (multiple-value-call fn (values-list more) (values-list arguments)))))
   
 
   (deftype string-designator ()
@@ -183,7 +238,7 @@ returns the values of `default` if no keys match."
     (generate-switch-body whole object clauses test key '(cerror "Return NIL from CSWITCH.")))
   
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (export '(define-constant ensure-boolean n-grams range switch eswitch cswitch
-            with-gensyms with-unique-names)))
+  (export '(curry define-constant ensure-boolean n-grams range rcurry switch
+            eswitch cswitch with-gensyms with-unique-names)))
 
 ;;;; END OF quickutils.lisp ;;;;

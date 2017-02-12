@@ -4,10 +4,12 @@
   "quickutils.lisp"
   :utilities '(
 
+               :curry
                :define-constant
                :ensure-boolean
                :n-grams
                :range
+               :rcurry
                :switch
                :with-gensyms
 
