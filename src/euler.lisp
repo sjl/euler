@@ -42,6 +42,23 @@
                 (counting (dividesp n i)))))
 
 
+(defmacro-driver (FOR var IN-COLLATZ n)
+  (let ((kwd (if generate 'generate 'for)))
+    `(progn
+       (,kwd ,var :next (cond ((null ,var) ,n)
+                              ((= 1 ,var) (terminate))
+                              ((evenp ,var) (/ ,var 2))
+                              (t (1+ (* 3 ,var))))))))
+
+(defun collatz (n)
+  (iterate (for i :in-collatz n)
+           (collect i)))
+
+(defun collatz-length (n)
+  (iterate (for i :in-collatz n)
+           (counting t)))
+
+
 ;;;; Problems -----------------------------------------------------------------
 (defun problem-1 ()
   ;; If we list all the natural numbers below 10 that are multiples of 3 or 5,
@@ -365,6 +382,28 @@
     parse-integer
     (nth-value 0 <>)))
 
+(defun problem-14 ()
+  ;; The following iterative sequence is defined for the set of positive
+  ;; integers:
+  ;;
+  ;;   n → n/2 (n is even)
+  ;;   n → 3n + 1 (n is odd)
+  ;;
+  ;; Using the rule above and starting with 13, we generate the following
+  ;; sequence:
+  ;;
+  ;;   13 → 40 → 20 → 10 → 5 → 16 → 8 → 4 → 2 → 1
+  ;;
+  ;; It can be seen that this sequence (starting at 13 and finishing at 1)
+  ;; contains 10 terms. Although it has not been proved yet (Collatz Problem),
+  ;; it is thought that all starting numbers finish at 1.
+  ;;
+  ;; Which starting number, under one million, produces the longest chain?
+  ;;
+  ;; NOTE: Once the chain starts the terms are allowed to go above one million.
+
+  (iterate (for i :from 1 :below 1000000)
+           (finding i :maximizing #'collatz-length)))
 
 ;;;; Tests --------------------------------------------------------------------
 (def-suite :euler)
@@ -383,6 +422,7 @@
 (test p11 (is (= 70600674 (problem-11))))
 (test p12 (is (= 76576500 (problem-12))))
 (test p13 (is (= 5537376230 (problem-13))))
+(test p14 (is (= 837799 (problem-14))))
 
 
 ; (run! :euler)
