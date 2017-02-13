@@ -48,9 +48,11 @@
           (not (dividesp n 11))) nil)
     (t (definitely-palindrome-p n))))
 
-(defun sum (sequence)
+(defun sum (sequence &key key)
   (iterate (for n :in-whatever sequence)
-           (sum n)))
+           (sum (if key
+                  (funcall key n)
+                  n))))
 
 (defun divisors (n)
   (sort (iterate (for i :from 1 :to (sqrt n))
@@ -449,6 +451,30 @@
   ;; What is the sum of the digits of the number 2^1000?
   (sum (digits (expt 2 1000))))
 
+(defun problem-17 ()
+  ;; If the numbers 1 to 5 are written out in words: one, two, three, four,
+  ;; five, then there are 3 + 3 + 5 + 4 + 4 = 19 letters used in total.
+  ;;
+  ;; If all the numbers from 1 to 1000 (one thousand) inclusive were written out
+  ;; in words, how many letters would be used?
+  ;;
+  ;; NOTE: Do not count spaces or hyphens. For example, 342 (three hundred and
+  ;; forty-two) contains 23 letters and 115 (one hundred and fifteen) contains
+  ;; 20 letters. The use of "and" when writing out numbers is in compliance with
+  ;; British usage, which is awful.
+  (labels ((letters (n)
+             (-<> n
+               (format nil "~R" <>)
+               (count-if #'alpha-char-p <>)))
+           (has-british-and (n)
+             (or (< n 100)
+                 (zerop (mod n 100))))
+           (silly-british-letters (n)
+             (+ (letters n)
+                (if (has-british-and n) 0 3))))
+    (sum (range 1 (1+ 1000))
+         :key #'silly-british-letters)))
+
 
 ;;;; Tests --------------------------------------------------------------------
 (def-suite :euler)
@@ -470,6 +496,7 @@
 (test p14 (is (= 837799 (problem-14))))
 (test p15 (is (= 137846528820 (problem-15))))
 (test p16 (is (= 1366 (problem-16))))
+(test p17 (is (= 21124 (problem-17))))
 
 
 ;; (run! :euler)
