@@ -10,13 +10,9 @@
 
   :depends-on (
 
-               :fare-quasiquote-optima
-               :fare-quasiquote-readtable
                :fiveam
                :iterate
                :losh
-               :optima
-               :trivial-types
 
                )
 
