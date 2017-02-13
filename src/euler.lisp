@@ -1,9 +1,31 @@
 (in-package :euler)
 
 ;;;; Utils --------------------------------------------------------------------
-(defun digits (n)
-  "Return how many digits `n` has in base 10."
-  (values (truncate (1+ (log n 10)))))
+(defmacro-driver (FOR var IN-DIGITS-OF integer &optional RADIX (radix 10))
+  "Iterate `var` through the digits of `integer` in base `radix`, low-order first."
+  (let ((kwd (if generate 'generate 'for)))
+    (with-gensyms (i r remaining digit)
+      `(progn
+         (with ,r = ,radix)
+         (with ,i = (abs ,integer))
+         (,kwd ,var :next (if (zerop ,i)
+                            (terminate)
+                            (multiple-value-bind (,remaining ,digit)
+                                (truncate ,i ,r)
+                              (setf ,i ,remaining)
+                              ,digit)))))))
+
+(defun digits (n &optional (radix 10))
+  "Return a fresh list of the digits of `n` in base `radix`."
+  (iterate (for d :in-digits-of n :radix radix)
+           (collect d :at :beginning)))
+
+(defun digits-length (n &optional (radix 10))
+  "Return how many digits `n` has in base `radix`."
+  (if (zerop n)
+    1
+    (values (1+ (truncate (log (abs n) radix))))))
+
 
 (defun definitely-palindrome-p (n)
   "Return whether `n` is a palindrome (in base 10), the slow-but-sure way."
@@ -22,7 +44,7 @@
   ;;   001100 * c
   (cond
     ((zerop n) t)
-    ((and (evenp (digits n))
+    ((and (evenp (digits-length n))
           (not (dividesp n 11))) nil)
     (t (definitely-palindrome-p n))))
 
@@ -57,6 +79,14 @@
 (defun collatz-length (n)
   (iterate (for i :in-collatz n)
            (counting t)))
+
+
+(defun binomial-coefficient (n k)
+  "Return `n` choose `k`."
+  ;; https://en.wikipedia.org/wiki/Binomial_coefficient#Multiplicative_formula
+  (iterate (for i :from 1 :to k)
+           (multiply (/ (+ n 1 (- i))
+                        i))))
 
 
 ;;;; Problems -----------------------------------------------------------------
@@ -405,6 +435,21 @@
   (iterate (for i :from 1 :below 1000000)
            (finding i :maximizing #'collatz-length)))
 
+(defun problem-15 ()
+  ;; Starting in the top left corner of a 2×2 grid, and only being able to move
+  ;; to the right and down, there are exactly 6 routes to the bottom right
+  ;; corner.
+  ;;
+  ;; How many such routes are there through a 20×20 grid?
+  (binomial-coefficient 40 20))
+
+(defun problem-16 ()
+  ;; 2^15 = 32768 and the sum of its digits is 3 + 2 + 7 + 6 + 8 = 26.
+  ;;
+  ;; What is the sum of the digits of the number 2^1000?
+  (sum (digits (expt 2 1000))))
+
+
 ;;;; Tests --------------------------------------------------------------------
 (def-suite :euler)
 (in-suite :euler)
@@ -423,6 +468,8 @@
 (test p12 (is (= 76576500 (problem-12))))
 (test p13 (is (= 5537376230 (problem-13))))
 (test p14 (is (= 837799 (problem-14))))
+(test p15 (is (= 137846528820 (problem-15))))
+(test p16 (is (= 1366 (problem-16))))
 
 
-; (run! :euler)
+;; (run! :euler)
