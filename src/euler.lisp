@@ -514,6 +514,29 @@
                  triangle
                  :from-end t))))
 
+(defun problem-19 ()
+  ;; You are given the following information, but you may prefer to do some
+  ;; research for yourself.
+  ;;
+  ;; 1 Jan 1900 was a Monday.
+  ;; Thirty days has September,
+  ;; April, June and November.
+  ;; All the rest have thirty-one,
+  ;; Saving February alone,
+  ;; Which has twenty-eight, rain or shine.
+  ;; And on leap years, twenty-nine.
+  ;; A leap year occurs on any year evenly divisible by 4, but not on a century
+  ;; unless it is divisible by 400.
+  ;;
+  ;; How many Sundays fell on the first of the month during the twentieth
+  ;; century (1 Jan 1901 to 31 Dec 2000)?
+  (iterate
+    (for-nested ((year :from 1901 :to 2000)
+                 (month :from 1 :to 12)))
+    (counting (-<> (local-time:encode-timestamp 0 0 0 0 1 month year)
+                local-time:timestamp-day-of-week
+                zerop))))
+
 
 ;;;; Tests --------------------------------------------------------------------
 (def-suite :euler)
@@ -537,6 +560,7 @@
 (test p16 (is (= 1366 (problem-16))))
 (test p17 (is (= 21124 (problem-17))))
 (test p18 (is (= 1074 (problem-18))))
+(test p19 (is (= 171 (problem-19))))
 
 
 ;; (run! :euler)
