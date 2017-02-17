@@ -91,6 +91,11 @@
                         i))))
 
 
+(defun factorial (n)
+  (iterate (for i :from 1 :to n)
+           (multiplying i)))
+
+
 ;;;; Problems -----------------------------------------------------------------
 (defun problem-1 ()
   ;; If we list all the natural numbers below 10 that are multiples of 3 or 5,
@@ -537,6 +542,15 @@
                 local-time:timestamp-day-of-week
                 zerop))))
 
+(defun problem-20 ()
+  ;; n! means n × (n − 1) × ... × 3 × 2 × 1
+  ;;
+  ;; For example, 10! = 10 × 9 × ... × 3 × 2 × 1 = 3628800,
+  ;; and the sum of the digits in the number 10! is 3 + 6 + 2 + 8 + 8 + 0 + 0 = 27.
+  ;;
+  ;; Find the sum of the digits in the number 100!
+  (sum (digits (factorial 100))))
+
 
 ;;;; Tests --------------------------------------------------------------------
 (def-suite :euler)
@@ -561,6 +575,7 @@
 (test p17 (is (= 21124 (problem-17))))
 (test p18 (is (= 1074 (problem-18))))
 (test p19 (is (= 171 (problem-19))))
+(test p20 (is (= 648 (problem-20))))
 
 
 ;; (run! :euler)
