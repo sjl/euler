@@ -7,6 +7,7 @@
                :curry
                :define-constant
                :ensure-boolean
+               :read-file-into-string
                :n-grams
                :range
                :rcurry

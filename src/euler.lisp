@@ -576,6 +576,31 @@
                     (= n (sum-of-divisors other))))))
     (sum (remove-if-not #'amicablep (range 1 10000)))))
 
+(defun problem-22 ()
+  ;; Using names.txt, a 46K text file containing over five-thousand first names,
+  ;; begin by sorting it into alphabetical order. Then working out the
+  ;; alphabetical value for each name, multiply this value by its alphabetical
+  ;; position in the list to obtain a name score.
+  ;;
+  ;; For example, when the list is sorted into alphabetical order, COLIN, which
+  ;; is worth 3 + 15 + 12 + 9 + 14 = 53, is the 938th name in the list. So,
+  ;; COLIN would obtain a score of 938 × 53 = 49714.
+  ;;
+  ;; What is the total of all the name scores in the file?
+  (labels ((read-names ()
+             (-<> "data/22-names.txt"
+               read-file-into-string
+               (substitute #\Space #\, <>)
+               read-all-from-string
+               (sort <> #'string<)))
+           (letter-score (letter)
+             (1+ (- (char-code letter) (char-code #\A))))
+           (name-score (name)
+             (sum name :key #'letter-score)))
+    (iterate (for (position . name) :in
+                  (enumerate (read-names) :start 1))
+             (sum (* position (name-score name))))))
+
 
 ;;;; Tests --------------------------------------------------------------------
 (def-suite :euler)
@@ -602,6 +627,7 @@
 (test p19 (is (= 171 (problem-19))))
 (test p20 (is (= 648 (problem-20))))
 (test p21 (is (= 31626 (problem-21))))
+(test p22 (is (= 871198282 (problem-22))))
 
 
 ;; (run! :euler)
