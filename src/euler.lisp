@@ -60,7 +60,10 @@
   (sort (iterate (for i :from 1 :to (sqrt n))
                  (when (dividesp n i)
                    (collect i)
-                   (collect (/ n i))))
+                   (let ((j (/ n i)))
+                     ;; don't collect the square root twice
+                     (unless (= i j)
+                       (collect j)))))
         #'<))
 
 (defun proper-divisors (n)
@@ -99,6 +102,16 @@
 (defun factorial (n)
   (iterate (for i :from 1 :to n)
            (multiplying i)))
+
+
+(defun perfectp (n)
+  (= n (sum (proper-divisors n))))
+
+(defun abundantp (n)
+  (< n (sum (proper-divisors n))))
+
+(defun deficientp (n)
+  (> n (sum (proper-divisors n))))
 
 
 ;;;; Problems -----------------------------------------------------------------
@@ -601,6 +614,35 @@
                   (enumerate (read-names) :start 1))
              (sum (* position (name-score name))))))
 
+(defun problem-23 ()
+  ;; A perfect number is a number for which the sum of its proper divisors is
+  ;; exactly equal to the number. For example, the sum of the proper divisors of
+  ;; 28 would be 1 + 2 + 4 + 7 + 14 = 28, which means that 28 is a perfect
+  ;; number.
+  ;;
+  ;; A number n is called deficient if the sum of its proper divisors is less
+  ;; than n and it is called abundant if this sum exceeds n.
+  ;;
+  ;; As 12 is the smallest abundant number, 1 + 2 + 3 + 4 + 6 = 16, the smallest
+  ;; number that can be written as the sum of two abundant numbers is 24. By
+  ;; mathematical analysis, it can be shown that all integers greater than 28123
+  ;; can be written as the sum of two abundant numbers. However, this upper
+  ;; limit cannot be reduced any further by analysis even though it is known
+  ;; that the greatest number that cannot be expressed as the sum of two
+  ;; abundant numbers is less than this limit.
+  ;;
+  ;; Find the sum of all the positive integers which cannot be written as the
+  ;; sum of two abundant numbers.
+  (let* ((limit 28123)
+         (abundant-numbers
+           (make-hash-set :initial-contents
+                          (remove-if-not #'abundantp (range 1 (1+ limit))))))
+    (flet ((abundant-sum-p (n)
+             (iterate (for a :in-hashset abundant-numbers)
+                      (when (hset-contains-p abundant-numbers (- n a))
+                        (return t)))))
+      (sum (remove-if #'abundant-sum-p (range 1 (1+ limit)))))))
+
 
 ;;;; Tests --------------------------------------------------------------------
 (def-suite :euler)
@@ -628,6 +670,7 @@
 (test p20 (is (= 648 (problem-20))))
 (test p21 (is (= 31626 (problem-21))))
 (test p22 (is (= 871198282 (problem-22))))
+(test p23 (is (= 4179871 (problem-23))))
 
 
 ;; (run! :euler)
