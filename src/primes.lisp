@@ -162,3 +162,9 @@
                 (incf seen)
                 (when (= seen n)
                   (return i))))))
+
+(defun woodall (n)
+  (1- (* n (expt 2 n))))
+
+(defun woodall-prime-p (n)
+  (primep (woodall n)))
