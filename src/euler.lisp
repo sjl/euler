@@ -91,6 +91,24 @@
            (counting t)))
 
 
+(defmacro-driver (FOR var IN-FIBONACCI _)
+  (declare (ignore _))
+  (with-gensyms (a b)
+    (let ((kwd (if generate 'generate 'for)))
+      `(progn
+         (with ,a = 0)
+         (with ,b = 1)
+         (,kwd ,var :next (prog1 ,b
+                            (psetf ,a ,b
+                                   ,b (+ ,a ,b))))))))
+
+(defun fibonacci (n)
+  "Return the first `n` Fibonacci numbers as a fresh list."
+  (iterate (repeat n)
+           (for i :in-fibonacci t)
+           (collect i)))
+
+
 (defun binomial-coefficient (n k)
   "Return `n` choose `k`."
   ;; https://en.wikipedia.org/wiki/Binomial_coefficient#Multiplicative_formula
@@ -660,6 +678,34 @@
     (sort <> #'<)
     (elt <> (1- 1000000))))
 
+(defun problem-25 ()
+  ;; The Fibonacci sequence is defined by the recurrence relation:
+  ;;
+  ;;   Fn = Fn−1 + Fn−2, where F1 = 1 and F2 = 1.
+  ;;
+  ;; Hence the first 12 terms will be:
+  ;;
+  ;; F1 = 1
+  ;; F2 = 1
+  ;; F3 = 2
+  ;; F4 = 3
+  ;; F5 = 5
+  ;; F6 = 8
+  ;; F7 = 13
+  ;; F8 = 21
+  ;; F9 = 34
+  ;; F10 = 55
+  ;; F11 = 89
+  ;; F12 = 144
+  ;;
+  ;; The 12th term, F12, is the first term to contain three digits.
+  ;;
+  ;; What is the index of the first term in the Fibonacci sequence to contain
+  ;; 1000 digits?
+  (iterate (for f :in-fibonacci t)
+           (for i :from 1)
+           (finding i :such-that (= 1000 (digits-length f)))))
+
 
 ;;;; Tests --------------------------------------------------------------------
 (def-suite :euler)
@@ -689,6 +735,7 @@
 (test p22 (is (= 871198282 (problem-22))))
 (test p23 (is (= 4179871 (problem-23))))
 (test p24 (is (= 2783915460 (problem-24))))
+(test p25 (is (= 4782 (problem-25))))
 
 
 ;; (run! :euler)
