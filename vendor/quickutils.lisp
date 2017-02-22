@@ -2,7 +2,7 @@
 ;;;; See http://quickutil.org for details.
 
 ;;;; To regenerate:
-;;;; (qtlc:save-utils-as "quickutils.lisp" :utilities '(:CURRY :DEFINE-CONSTANT :ENSURE-BOOLEAN :READ-FILE-INTO-STRING :N-GRAMS :RANGE :RCURRY :SWITCH :WITH-GENSYMS) :ensure-package T :package "EULER.QUICKUTILS")
+;;;; (qtlc:save-utils-as "quickutils.lisp" :utilities '(:COMPOSE :CURRY :DEFINE-CONSTANT :ENSURE-BOOLEAN :MAP-PERMUTATIONS :N-GRAMS :RANGE :RCURRY :READ-FILE-INTO-STRING :SWITCH :WITH-GENSYMS) :ensure-package T :package "EULER.QUICKUTILS")
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (unless (find-package "EULER.QUICKUTILS")
@@ -14,13 +14,14 @@
 
 (when (boundp '*utilities*)
   (setf *utilities* (union *utilities* '(:MAKE-GENSYM-LIST :ENSURE-FUNCTION
-                                         :CURRY :DEFINE-CONSTANT
-                                         :ENSURE-BOOLEAN :ONCE-ONLY
+                                         :COMPOSE :CURRY :DEFINE-CONSTANT
+                                         :ENSURE-BOOLEAN :MAP-COMBINATIONS
+                                         :MAP-PERMUTATIONS :TAKE :N-GRAMS
+                                         :RANGE :RCURRY :ONCE-ONLY
                                          :WITH-OPEN-FILE* :WITH-INPUT-FROM-FILE
-                                         :READ-FILE-INTO-STRING :TAKE :N-GRAMS
-                                         :RANGE :RCURRY :STRING-DESIGNATOR
-                                         :WITH-GENSYMS :EXTRACT-FUNCTION-NAME
-                                         :SWITCH))))
+                                         :READ-FILE-INTO-STRING
+                                         :STRING-DESIGNATOR :WITH-GENSYMS
+                                         :EXTRACT-FUNCTION-NAME :SWITCH))))
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defun make-gensym-list (length &optional (x "G"))
     "Returns a list of `length` gensyms, each generated as if with a call to `make-gensym`,
@@ -44,6 +45,35 @@ it must be a function name and its `fdefinition` is returned."
         function-designator
         (fdefinition function-designator)))
   )                                        ; eval-when
+
+  (defun compose (function &rest more-functions)
+    "Returns a function composed of `function` and `more-functions` that applies its ;
+arguments to to each in turn, starting from the rightmost of `more-functions`,
+and then calling the next one with the primary value of the last."
+    (declare (optimize (speed 3) (safety 1) (debug 1)))
+    (reduce (lambda (f g)
+              (let ((f (ensure-function f))
+                    (g (ensure-function g)))
+                (lambda (&rest arguments)
+                  (declare (dynamic-extent arguments))
+                  (funcall f (apply g arguments)))))
+            more-functions
+            :initial-value function))
+
+  (define-compiler-macro compose (function &rest more-functions)
+    (labels ((compose-1 (funs)
+               (if (cdr funs)
+                   `(funcall ,(car funs) ,(compose-1 (cdr funs)))
+                   `(apply ,(car funs) arguments))))
+      (let* ((args (cons function more-functions))
+             (funs (make-gensym-list (length args) "COMPOSE")))
+        `(let ,(loop for f in funs for arg in args
+                     collect `(,f (ensure-function ,arg)))
+           (declare (optimize (speed 3) (safety 1) (debug 1)))
+           (lambda (&rest arguments)
+             (declare (dynamic-extent arguments))
+             ,(compose-1 funs))))))
+  
 
   (defun curry (function &rest arguments)
     "Returns a function that applies `arguments` and the arguments
@@ -105,6 +135,138 @@ equal under `test` to result of evaluating `initial-value`."
   (defun ensure-boolean (x)
     "Convert `x` into a Boolean value."
     (and x t))
+  
+
+  (defun map-combinations (function sequence &key (start 0) end length (copy t))
+    "Calls `function` with each combination of `length` constructable from the
+elements of the subsequence of `sequence` delimited by `start` and `end`. `start`
+defaults to `0`, `end` to length of `sequence`, and `length` to the length of the
+delimited subsequence. (So unless `length` is specified there is only a single
+combination, which has the same elements as the delimited subsequence.) If
+`copy` is true (the default) each combination is freshly allocated. If `copy` is
+false all combinations are `eq` to each other, in which case consequences are
+specified if a combination is modified by `function`."
+    (let* ((end (or end (length sequence)))
+           (size (- end start))
+           (length (or length size))
+           (combination (subseq sequence 0 length))
+           (function (ensure-function function)))
+      (if (= length size)
+          (funcall function combination)
+          (flet ((call ()
+                   (funcall function (if copy
+                                         (copy-seq combination)
+                                         combination))))
+            (etypecase sequence
+              ;; When dealing with lists we prefer walking back and
+              ;; forth instead of using indexes.
+              (list
+               (labels ((combine-list (c-tail o-tail)
+                          (if (not c-tail)
+                              (call)
+                              (do ((tail o-tail (cdr tail)))
+                                  ((not tail))
+                                (setf (car c-tail) (car tail))
+                                (combine-list (cdr c-tail) (cdr tail))))))
+                 (combine-list combination (nthcdr start sequence))))
+              (vector
+               (labels ((combine (count start)
+                          (if (zerop count)
+                              (call)
+                              (loop for i from start below end
+                                    do (let ((j (- count 1)))
+                                         (setf (aref combination j) (aref sequence i))
+                                         (combine j (+ i 1)))))))
+                 (combine length start)))
+              (sequence
+               (labels ((combine (count start)
+                          (if (zerop count)
+                              (call)
+                              (loop for i from start below end
+                                    do (let ((j (- count 1)))
+                                         (setf (elt combination j) (elt sequence i))
+                                         (combine j (+ i 1)))))))
+                 (combine length start)))))))
+    sequence)
+  
+
+  (defun map-permutations (function sequence &key (start 0) end length (copy t))
+    "Calls function with each permutation of `length` constructable
+from the subsequence of `sequence` delimited by `start` and `end`. `start`
+defaults to `0`, `end` to length of the sequence, and `length` to the
+length of the delimited subsequence."
+    (let* ((end (or end (length sequence)))
+           (size (- end start))
+           (length (or length size)))
+      (labels ((permute (seq n)
+                 (let ((n-1 (- n 1)))
+                   (if (zerop n-1)
+                       (funcall function (if copy
+                                             (copy-seq seq)
+                                             seq))
+                       (loop for i from 0 upto n-1
+                             do (permute seq n-1)
+                                (if (evenp n-1)
+                                    (rotatef (elt seq 0) (elt seq n-1))
+                                    (rotatef (elt seq i) (elt seq n-1)))))))
+               (permute-sequence (seq)
+                 (permute seq length)))
+        (if (= length size)
+            ;; Things are simple if we need to just permute the
+            ;; full START-END range.
+            (permute-sequence (subseq sequence start end))
+            ;; Otherwise we need to generate all the combinations
+            ;; of LENGTH in the START-END range, and then permute
+            ;; a copy of the result: can't permute the combination
+            ;; directly, as they share structure with each other.
+            (let ((permutation (subseq sequence 0 length)))
+              (flet ((permute-combination (combination)
+                       (permute-sequence (replace permutation combination))))
+                (declare (dynamic-extent #'permute-combination))
+                (map-combinations #'permute-combination sequence
+                                  :start start
+                                  :end end
+                                  :length length
+                                  :copy nil)))))))
+  
+
+  (defun take (n sequence)
+    "Take the first `n` elements from `sequence`."
+    (subseq sequence 0 n))
+  
+
+  (defun n-grams (n sequence)
+    "Find all `n`-grams of the sequence `sequence`."
+    (assert (and (plusp n)
+                 (<= n (length sequence))))
+    
+    (etypecase sequence
+      ;; Lists
+      (list (loop :repeat (1+ (- (length sequence) n))
+                  :for seq :on sequence
+                  :collect (take n seq)))
+      
+      ;; General sequences
+      (sequence (loop :for i :to (- (length sequence) n)
+                      :collect (subseq sequence i (+ i n))))))
+  
+
+  (defun range (start end &key (step 1) (key 'identity))
+    "Return the list of numbers `n` such that `start <= n < end` and
+`n = start + k*step` for suitable integers `k`. If a function `key` is
+provided, then apply it to each number."
+    (assert (<= start end))
+    (loop :for i :from start :below end :by step :collecting (funcall key i)))
+  
+
+  (defun rcurry (function &rest arguments)
+    "Returns a function that applies the arguments it is called
+with and `arguments` to `function`."
+    (declare (optimize (speed 3) (safety 1) (debug 1)))
+    (let ((fn (ensure-function function)))
+      (lambda (&rest more)
+        (declare (dynamic-extent more))
+        (multiple-value-call fn (values-list more) (values-list arguments)))))
   
 
   (defmacro once-only (specs &body forms)
@@ -196,45 +358,6 @@ unless it's `nil`, which means the system default."
               :for bytes-read = (read-sequence buffer file-stream)
               :do (write-sequence buffer datum :start 0 :end bytes-read)
               :while (= bytes-read buffer-size)))))))
-  
-
-  (defun take (n sequence)
-    "Take the first `n` elements from `sequence`."
-    (subseq sequence 0 n))
-  
-
-  (defun n-grams (n sequence)
-    "Find all `n`-grams of the sequence `sequence`."
-    (assert (and (plusp n)
-                 (<= n (length sequence))))
-    
-    (etypecase sequence
-      ;; Lists
-      (list (loop :repeat (1+ (- (length sequence) n))
-                  :for seq :on sequence
-                  :collect (take n seq)))
-      
-      ;; General sequences
-      (sequence (loop :for i :to (- (length sequence) n)
-                      :collect (subseq sequence i (+ i n))))))
-  
-
-  (defun range (start end &key (step 1) (key 'identity))
-    "Return the list of numbers `n` such that `start <= n < end` and
-`n = start + k*step` for suitable integers `k`. If a function `key` is
-provided, then apply it to each number."
-    (assert (<= start end))
-    (loop :for i :from start :below end :by step :collecting (funcall key i)))
-  
-
-  (defun rcurry (function &rest arguments)
-    "Returns a function that applies the arguments it is called
-with and `arguments` to `function`."
-    (declare (optimize (speed 3) (safety 1) (debug 1)))
-    (let ((fn (ensure-function function)))
-      (lambda (&rest more)
-        (declare (dynamic-extent more))
-        (multiple-value-call fn (values-list more) (values-list arguments)))))
   
 
   (deftype string-designator ()
@@ -331,7 +454,8 @@ returns the values of `default` if no keys match."
     (generate-switch-body whole object clauses test key '(cerror "Return NIL from CSWITCH.")))
   
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (export '(curry define-constant ensure-boolean read-file-into-string n-grams
-            range rcurry switch eswitch cswitch with-gensyms with-unique-names)))
+  (export '(compose curry define-constant ensure-boolean map-permutations
+            n-grams range rcurry read-file-into-string switch eswitch cswitch
+            with-gensyms with-unique-names)))
 
 ;;;; END OF quickutils.lisp ;;;;

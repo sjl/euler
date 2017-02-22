@@ -643,6 +643,23 @@
                         (return t)))))
       (sum (remove-if #'abundant-sum-p (range 1 (1+ limit)))))))
 
+(defun problem-24 ()
+  ;; A permutation is an ordered arrangement of objects. For example, 3124 is
+  ;; one possible permutation of the digits 1, 2, 3 and 4. If all of the
+  ;; permutations are listed numerically or alphabetically, we call it
+  ;; lexicographic order. The lexicographic permutations of 0, 1 and 2 are:
+  ;;
+  ;; 012   021   102   120   201   210
+  ;;
+  ;; What is the millionth lexicographic permutation of the digits 0, 1, 2, 3,
+  ;; 4, 5, 6, 7, 8 and 9?
+  (-<> "0123456789"
+    (gathering-vector (:size (factorial (length <>)))
+      (map-permutations #'gather <>))
+    (map-into <> #'parse-integer <>)
+    (sort <> #'<)
+    (elt <> (1- 1000000))))
+
 
 ;;;; Tests --------------------------------------------------------------------
 (def-suite :euler)
@@ -671,6 +688,7 @@
 (test p21 (is (= 31626 (problem-21))))
 (test p22 (is (= 871198282 (problem-22))))
 (test p23 (is (= 4179871 (problem-23))))
+(test p24 (is (= 2783915460 (problem-24))))
 
 
 ;; (run! :euler)
