@@ -132,6 +132,14 @@
   (> n (sum (proper-divisors n))))
 
 
+(defun multiplicative-order (integer modulus)
+  "Return the multiplicative order of `integer` modulo `modulus`."
+  ;; https://en.wikipedia.org/wiki/Multiplicative_order
+  (iterate (for i :from 1)
+           (for v :first integer :then (* v integer))
+           (finding i :such-that (= 1 (mod v modulus)))))
+
+
 ;;;; Problems -----------------------------------------------------------------
 (defun problem-1 ()
   ;; If we list all the natural numbers below 10 that are multiples of 3 or 5,
@@ -705,6 +713,30 @@
   (iterate (for f :in-fibonacci t)
            (for i :from 1)
            (finding i :such-that (= 1000 (digits-length f)))))
+
+(defun problem-26 ()
+  ;; A unit fraction contains 1 in the numerator. The decimal representation of
+  ;; the unit fractions with denominators 2 to 10 are given:
+  ;;
+  ;; 1/2	= 	0.5
+  ;; 1/3	= 	0.(3)
+  ;; 1/4	= 	0.25
+  ;; 1/5	= 	0.2
+  ;; 1/6	= 	0.1(6)
+  ;; 1/7	= 	0.(142857)
+  ;; 1/8	= 	0.125
+  ;; 1/9	= 	0.(1)
+  ;; 1/10	= 	0.1
+  ;;
+  ;; Where 0.1(6) means 0.166666..., and has a 1-digit recurring cycle. It can
+  ;; be seen that 1/7 has a 6-digit recurring cycle.
+  ;;
+  ;; Find the value of d < 1000 for which 1/d contains the longest recurring
+  ;; cycle in its decimal fraction part.
+  (iterate
+    ;; 2 and 5 are the only primes that aren't coprime to 10
+    (for i :in (set-difference (primes-below 1000) '(2 5)))
+    (finding i :maximizing (multiplicative-order 10 i))))
 
 
 ;;;; Tests --------------------------------------------------------------------
