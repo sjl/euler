@@ -140,6 +140,36 @@
            (finding i :such-that (= 1 (mod v modulus)))))
 
 
+(defun number-spiral (size)
+  ;; See problem 28
+  (assert (oddp size) (size))
+  (flet ((turn (dx dy)
+           (cond
+             ((and (= dx  1) (= dy  0)) (values  0  1))
+             ((and (= dx -1) (= dy  0)) (values  0 -1))
+             ((and (= dx  0) (= dy  1)) (values -1  0))
+             ((and (= dx  0) (= dy -1)) (values  1  0)))))
+    (iterate
+      (with array = (make-array (list size size)))
+      (with i = 1)
+      (with x = (floor (/ size 2)))
+      (with y = (floor (/ size 2)))
+      (with dx = 1)
+      (with dy = 0)
+      (initially (setf (aref array y x) i))
+      (for counter :from 1 :by 1/2)
+      (for run-length = (truncate counter))
+      (iterate (repeat run-length)
+               (incf i)
+               (incf x dx)
+               (incf y dy)
+               (if (and (in-range-p 0 x size)
+                        (in-range-p 0 y size))
+                 (setf (aref array y x) i)
+                 (return-from number-spiral array)))
+      (setf (values dx dy) (turn dx dy)))))
+
+
 ;;;; Problems -----------------------------------------------------------------
 (defun problem-1 ()
   ;; If we list all the natural numbers below 10 that are multiples of 3 or 5,
@@ -770,6 +800,31 @@
                           (b :from -1000 :to 1000)))
              (finding (* a b) :maximizing (primes-produced a b)))))
 
+(defun problem-28 ()
+  ;; Starting with the number 1 and moving to the right in a clockwise direction
+  ;; a 5 by 5 spiral is formed as follows:
+  ;;
+  ;; 21 22 23 24 25
+  ;; 20  7  8  9 10
+  ;; 19  6  1  2 11
+  ;; 18  5  4  3 12
+  ;; 17 16 15 14 13
+  ;;
+  ;; It can be verified that the sum of the numbers on the diagonals is 101.
+  ;;
+  ;; What is the sum of the numbers on the diagonals in a 1001 by 1001 spiral
+  ;; formed in the same way?
+  (let* ((size 1001)
+         (spiral (number-spiral size)))
+    (+ (iterate (for x :from 0 :below size) ; \
+                (for y :from 0 :below size)
+                (summing (aref spiral y x)))
+       (iterate (for x :from (1- size) :downto 0) ; /
+                (for y :from 0 :below size)
+                (summing (aref spiral y x)))
+       ;; don't double-count the center...
+       (- (aref spiral (truncate size 2) (truncate size 2))))))
+
 
 ;;;; Tests --------------------------------------------------------------------
 (def-suite :euler)
@@ -801,6 +856,8 @@
 (test p24 (is (= 2783915460 (problem-24))))
 (test p25 (is (= 4782 (problem-25))))
 (test p26 (is (= 983 (problem-26))))
+(test p27 (is (= -59231 (problem-27))))
+(test p28 (is (= 669171001 (problem-28))))
 
 
 ;; (run! :euler)
