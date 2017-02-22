@@ -55,6 +55,12 @@
                   (funcall key n)
                   n))))
 
+(defun product (sequence &key key)
+  (iterate (for n :in-whatever sequence)
+           (multiplying (if key
+                          (funcall key n)
+                          n))))
+
 
 (defun divisors (n)
   (sort (iterate (for i :from 1 :to (sqrt n))
@@ -844,6 +850,36 @@
                                 (b :from 2 :to 100)))
                    (adjoining (expt a b)))))
 
+(defun problem-30 ()
+  ;; Surprisingly there are only three numbers that can be written as the sum of
+  ;; fourth powers of their digits:
+  ;;
+  ;; 1634 = 1⁴ + 6⁴ + 3⁴ + 4⁴
+  ;; 8208 = 8⁴ + 2⁴ + 0⁴ + 8⁴
+  ;; 9474 = 9⁴ + 4⁴ + 7⁴ + 4⁴
+  ;;
+  ;; As 1 = 1⁴ is not a sum it is not included.
+  ;;
+  ;; The sum of these numbers is 1634 + 8208 + 9474 = 19316.
+  ;;
+  ;; Find the sum of all the numbers that can be written as the sum of fifth
+  ;; powers of their digits.
+  (flet ((maximum-sum-for-digits (n)
+           (* (expt 9 5) n))
+         (digit-power-sum (n)
+           (sum (mapcar (rcurry #'expt 5) (digits n)))))
+    (iterate
+      ;; We want to find a limit N that's bigger than the maximum possible sum
+      ;; for its number of digits.
+      (with limit = (iterate (for digits :from 1)
+                             (for n = (expt 10 digits))
+                             (while (< n (maximum-sum-for-digits digits)))
+                             (finally (return n))))
+      ;; Then just brute-force the thing.
+      (for i :from 2 :to limit)
+      (when (= i (digit-power-sum i))
+        (summing i)))))
+
 
 ;;;; Tests --------------------------------------------------------------------
 (def-suite :euler)
@@ -878,6 +914,7 @@
 (test p27 (is (= -59231 (problem-27))))
 (test p28 (is (= 669171001 (problem-28))))
 (test p29 (is (= 9183 (problem-29))))
+(test p30 (is (= 443839 (problem-30))))
 
 
 ;; (run! :euler)
