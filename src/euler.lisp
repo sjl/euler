@@ -190,7 +190,7 @@
 
 (defun pandigitalp (integer &key (start 1) (end 9))
   "Return whether `integer` is `start` to `end` (inclusive) pandigital.
-  
+
   Examples:
 
     (pandigitalp 123)     ; => nil
@@ -200,6 +200,17 @@
   "
   (equal (range start (1+ end))
          (sort (digits integer) #'<)))
+
+(defun pandigitals (&optional (start 1) (end 9))
+  "Return a list of all `start` to `end` (inclusive) pandigital numbers."
+  (gathering
+    (map-permutations (lambda (digits)
+                        ;; 0-to-n pandigitals are annoying because we don't want
+                        ;; to include those with a 0 first.
+                        (unless (zerop (first digits))
+                          (gather (digits-to-number digits))))
+                      (range start (1+ end))
+                      :copy nil)))
 
 
 (defun-inline digits< (n digits)
@@ -1226,21 +1237,15 @@
   ;; and is also prime.
   ;;
   ;; What is the largest n-digit pandigital prime that exists?
-  (flet ((pandigitals (n)
-           "Return a list of all `n`-digit pandigital numbers."
-           (gathering
-             (map-permutations (compose #'gather #'digits-to-number)
-                               (range 1 (1+ n))
-                               :copy nil))))
-    (iterate
-      ;; There's a clever observation which reduces the upper bound from 9 to
-      ;; 7 from "gamma" in the forum:
-      ;;
-      ;; > Note: Nine numbers cannot be done (1+2+3+4+5+6+7+8+9=45 => always dividable by 3)
-      ;; > Note: Eight numbers cannot be done (1+2+3+4+5+6+7+8=36 => always dividable by 3)
-      (for n :downfrom 7)
-      (thereis (apply (nullary #'max)
-                      (remove-if-not #'primep (pandigitals n)))))))
+  (iterate
+    ;; There's a clever observation which reduces the upper bound from 9 to
+    ;; 7 from "gamma" in the forum:
+    ;;
+    ;; > Note: Nine numbers cannot be done (1+2+3+4+5+6+7+8+9=45 => always dividable by 3)
+    ;; > Note: Eight numbers cannot be done (1+2+3+4+5+6+7+8=36 => always dividable by 3)
+    (for n :downfrom 7)
+    (thereis (apply (nullary #'max)
+                    (remove-if-not #'primep (pandigitals 1 n))))))
 
 (defun problem-42 ()
   ;; The nth term of the sequence of triangle numbers is given by, tn = ½n(n+1);
@@ -1261,6 +1266,37 @@
            (triangle-word-p (word)
              (trianglep (word-value word))))
     (count-if #'triangle-word-p (parse-strings-file "data/42-words.txt"))))
+
+(defun problem-43 ()
+  ;; The number, 1406357289, is a 0 to 9 pandigital number because it is made up
+  ;; of each of the digits 0 to 9 in some order, but it also has a rather
+  ;; interesting sub-string divisibility property.
+  ;;
+  ;; Let d1 be the 1st digit, d2 be the 2nd digit, and so on. In this way, we
+  ;; note the following:
+  ;;
+  ;; d2d3d4=406 is divisible by 2
+  ;; d3d4d5=063 is divisible by 3
+  ;; d4d5d6=635 is divisible by 5
+  ;; d5d6d7=357 is divisible by 7
+  ;; d6d7d8=572 is divisible by 11
+  ;; d7d8d9=728 is divisible by 13
+  ;; d8d9d10=289 is divisible by 17
+  ;;
+  ;; Find the sum of all 0 to 9 pandigital numbers with this property.
+  (labels ((extract3 (digits start)
+             (digits-to-number (subseq digits start (+ 3 start))))
+           (interestingp (n)
+             (let ((digits (digits n)))
+               ;; eat shit mathematicians, indexes start from zero
+               (and (dividesp (extract3 digits 1) 2)
+                    (dividesp (extract3 digits 2) 3)
+                    (dividesp (extract3 digits 3) 5)
+                    (dividesp (extract3 digits 4) 7)
+                    (dividesp (extract3 digits 5) 11)
+                    (dividesp (extract3 digits 6) 13)
+                    (dividesp (extract3 digits 7) 17)))))
+    (sum (remove-if-not #'interestingp (pandigitals 0 9)))))
 
 
 ;;;; Tests --------------------------------------------------------------------
@@ -1309,6 +1345,7 @@
 (test p40 (is (= 210 (problem-40))))
 (test p41 (is (= 7652413 (problem-41))))
 (test p42 (is (= 210 (problem-42))))
+(test p43 (is (= 16695334890 (problem-43))))
 
 
 ;; (run! :euler)
