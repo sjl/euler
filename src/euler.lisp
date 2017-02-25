@@ -182,6 +182,35 @@
   (values))
 
 
+(defun concatenate-integers (&rest integers)
+  "Concatenate each integer in `integers` and return a big ol' integer result."
+  (values (parse-integer
+            (format nil "~{~D~}" integers))))
+
+
+(defun pandigitalp (integer &key (start 1) (end 9))
+  "Return whether `integer` is `start` to `end` (inclusive) pandigital.
+  
+  Examples:
+
+    (pandigitalp 123)     ; => nil
+    (pandigitalp 123 1 3) ; => t
+    (pandigitalp 123 0 3) ; => nil
+
+  "
+  (equal (range start (1+ end))
+         (sort (digits integer) #'<)))
+
+
+(defun-inline digits< (n digits)
+  "Return whether `n` has fewer than `digits` digits."
+  (< (abs n) (expt 10 (1- digits))))
+
+(defun-inline digits<= (n digits)
+  "Return whether `n` has `digits` or fewer digits."
+  (< (abs n) (expt 10 digits)))
+
+
 ;;;; Problems -----------------------------------------------------------------
 (defun problem-1 ()
   ;; If we list all the natural numbers below 10 that are multiples of 3 or 5,
@@ -1049,6 +1078,41 @@
         (incf count))
       (while (< count 11)))))
 
+(defun problem-38 ()
+  ;; Take the number 192 and multiply it by each of 1, 2, and 3:
+  ;;
+  ;;   192 × 1 = 192
+  ;;   192 × 2 = 384
+  ;;   192 × 3 = 576
+  ;;
+  ;; By concatenating each product we get the 1 to 9 pandigital, 192384576. We
+  ;; will call 192384576 the concatenated product of 192 and (1,2,3)
+  ;;
+  ;; The same can be achieved by starting with 9 and multiplying by 1, 2, 3, 4,
+  ;; and 5, giving the pandigital, 918273645, which is the concatenated product
+  ;; of 9 and (1,2,3,4,5).
+  ;;
+  ;; What is the largest 1 to 9 pandigital 9-digit number that can be formed as
+  ;; the concatenated product of an integer with (1,2, ... , n) where n > 1?
+  (labels ((concatenated-product (number i)
+             (apply #'concatenate-integers
+                    (iterate (for n :from 1 :to i)
+                             (collect (* number n))))))
+    (iterate
+      main
+      (for base :from 1)
+      ;; base can't be more than 5 digits long because we have to concatenate at
+      ;; least two products of it
+      (while (digits<= base 5))
+      (iterate (for n :from 2)
+               (for result = (concatenated-product base n))
+               ;; result is only ever going to grow larger, so once we pass the
+               ;; nine digit mark we can stop
+               (while (digits<= result 9))
+               (when (pandigitalp result)
+                 (in main (maximizing result)))))))
+
+
 ;;;; Tests --------------------------------------------------------------------
 (def-suite :euler)
 (in-suite :euler)
@@ -1090,6 +1154,7 @@
 (test p35 (is (= 55 (problem-35))))
 (test p36 (is (= 872187 (problem-36))))
 (test p37 (is (= 748317 (problem-37))))
+(test p38 (is (= 932718654 (problem-38))))
 
 
 ;; (run! :euler)
