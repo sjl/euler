@@ -35,26 +35,10 @@
            (finally (return result))))
 
 
-(defun definitely-palindrome-p (n)
-  "Return whether `n` is a palindrome (in base 10), the slow-but-sure way."
-  (let ((s (format nil "~D" n)))
+(defun palindromep (n &optional (radix 10))
+  "Return whether `n` is a palindrome in base `radix`."
+  (let ((s (format nil "~VR" radix n)))
     (string= s (reverse s))))
-
-(defun palindromep (n)
-  "Return whether `n` is a palindrome (in base 10)."
-  (assert (>= n 0) (n) "~A must be a non-negative integer" n)
-  ;; All even-length base-10 palindromes are divisible by 11, so we can shortcut
-  ;; the awful string comparison. E.g.:
-  ;;
-  ;;   abccba =
-  ;;   100001 * a +
-  ;;   010010 * b +
-  ;;   001100 * c
-  (cond
-    ((zerop n) t)
-    ((and (evenp (digits-length n))
-          (not (dividesp n 11))) nil)
-    (t (definitely-palindrome-p n))))
 
 
 (defun sum (sequence &key key)
@@ -225,7 +209,7 @@
   (iterate (for-nested ((i :from 0 :to 999)
                         (j :from 0 :to 999)))
            (for product = (* i j))
-           (when (palindromep product)
+           (when (definitely-palindrome-p product)
              (maximize product))))
 
 (defun problem-5 ()
@@ -1013,6 +997,20 @@
     (iterate (for i :in (primes-below 1000000))
              (counting (circular-prime-p i)))))
 
+(defun problem-36 ()
+  ;; The decimal number, 585 = 1001001001 (binary), is palindromic in both
+  ;; bases.
+  ;;
+  ;; Find the sum of all numbers, less than one million, which are palindromic
+  ;; in base 10 and base 2.
+  ;;
+  ;; (Please note that the palindromic number, in either base, may not include
+  ;; leading zeros.)
+  (iterate (for i :from 1 :below 1000000)
+           (when (and (palindromep i 10)
+                      (palindromep i 2))
+             (sum i))))
+
 
 ;;;; Tests --------------------------------------------------------------------
 (def-suite :euler)
@@ -1052,6 +1050,8 @@
 (test p32 (is (= 45228 (problem-32))))
 (test p33 (is (= 100 (problem-33))))
 (test p34 (is (= 40730 (problem-34))))
+(test p35 (is (= 55 (problem-35))))
+(test p36 (is (= 872187 (problem-36))))
 
 
 ;; (run! :euler)
