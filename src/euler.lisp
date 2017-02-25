@@ -1170,6 +1170,29 @@
     (for p :from 1 :to 1000)
     (finding p :maximizing (length (pythagorean-triplets-of-perimeter p)))))
 
+(defun problem-40 ()
+  ;; An irrational decimal fraction is created by concatenating the positive
+  ;; integers:
+  ;;
+  ;; 0.123456789101112131415161718192021...
+  ;;
+  ;; It can be seen that the 12th digit of the fractional part is 1.
+  ;;
+  ;; If dn represents the nth digit of the fractional part, find the value of
+  ;; the following expression.
+  ;;
+  ;; d1 × d10 × d100 × d1000 × d10000 × d100000 × d1000000
+  (iterate
+    top
+    (with index = 0)
+    (for i :from 1)
+    (iterate (for d :in (digits i))
+             (incf index)
+             (when (member index '(1 10 100 1000 10000 100000 1000000))
+               (in top (multiplying d))
+               (when (= index 1000000)
+                 (in top (terminate)))))))
+
 
 ;;;; Tests --------------------------------------------------------------------
 (def-suite :euler)
@@ -1214,6 +1237,7 @@
 (test p37 (is (= 748317 (problem-37))))
 (test p38 (is (= 932718654 (problem-38))))
 (test p39 (is (= 840 (problem-39))))
+(test p40 (is (= 210 (problem-40))))
 
 
 ;; (run! :euler)
