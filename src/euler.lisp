@@ -993,6 +993,26 @@
     (when (= n (funcall #'sum (digits n) :key #'factorial))
       (summing n))))
 
+(defun problem-35 ()
+  ;; The number, 197, is called a circular prime because all rotations of the
+  ;; digits: 197, 971, and 719, are themselves prime.
+  ;;
+  ;; There are thirteen such primes below 100: 2, 3, 5, 7, 11, 13, 17, 31, 37,
+  ;; 71, 73, 79, and 97.
+  ;;
+  ;; How many circular primes are there below one million?
+  (labels ((rotate (n distance)
+             (multiple-value-bind (hi lo)
+                 (truncate n (expt 10 distance))
+               (+ (* (expt 10 (digits-length hi)) lo)
+                  hi)))
+           (rotations (n)
+             (mapcar (curry #'rotate n) (range 1 (digits-length n))))
+           (circular-prime-p (n)
+             (every #'primep (rotations n))))
+    (iterate (for i :in (primes-below 1000000))
+             (counting (circular-prime-p i)))))
+
 
 ;;;; Tests --------------------------------------------------------------------
 (def-suite :euler)
