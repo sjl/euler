@@ -150,7 +150,6 @@
   "Return the prime numbers less than or equal to `n`."
   (primes-below (1+ n)))
 
-
 (defun nth-prime (n)
   "Return the `n`th prime number."
   (if (= n 1)

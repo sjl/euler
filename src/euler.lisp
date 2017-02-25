@@ -168,6 +168,20 @@
       (setf (values dx dy) (turn dx dy)))))
 
 
+(defun truncate-number-left (n amount &optional (radix 10))
+  "Chop `amount` digits off the left side of `n` in base `radix`."
+  (mod n (expt radix (- (digits-length n radix) amount))))
+
+(defun truncate-number-right (n amount &optional (radix 10))
+  "Chop `amount` digits off the right side of `n` in base `radix`."
+  (truncate n (expt radix amount)))
+
+
+(defun hex (n)
+  (format t "~X" n)
+  (values))
+
+
 ;;;; Problems -----------------------------------------------------------------
 (defun problem-1 ()
   ;; If we list all the natural numbers below 10 that are multiples of 3 or 5,
@@ -1011,6 +1025,29 @@
                       (palindromep i 2))
              (sum i))))
 
+(defun problem-37 ()
+  ;; The number 3797 has an interesting property. Being prime itself, it is
+  ;; possible to continuously remove digits from left to right, and remain prime
+  ;; at each stage: 3797, 797, 97, and 7. Similarly we can work from right to
+  ;; left: 3797, 379, 37, and 3.
+  ;;
+  ;; Find the sum of the only eleven primes that are both truncatable from left
+  ;; to right and right to left.
+  ;;
+  ;; NOTE: 2, 3, 5, and 7 are not considered to be truncatable primes.
+  (labels ((truncations (n)
+             (iterate (for i :from 0 :below (digits-length n))
+                      (collect (truncate-number-left n i))
+                      (collect (truncate-number-right n i))))
+           (truncatablep (n)
+             (every #'primep (truncations n))))
+    (iterate
+      (with count = 0)
+      (for i :from 11 :by 2)
+      (when (truncatablep i)
+        (sum i)
+        (incf count))
+      (while (< count 11)))))
 
 ;;;; Tests --------------------------------------------------------------------
 (def-suite :euler)
@@ -1052,6 +1089,7 @@
 (test p34 (is (= 40730 (problem-34))))
 (test p35 (is (= 55 (problem-35))))
 (test p36 (is (= 872187 (problem-36))))
+(test p37 (is (= 748317 (problem-37))))
 
 
 ;; (run! :euler)
