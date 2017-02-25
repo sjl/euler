@@ -28,11 +28,9 @@
 
 
 (defun digits-to-number (digits)
-  (iterate (with result = 0)
-           (for d :in-whatever digits)
-           (mulf result 10)
-           (incf result d)
-           (finally (return result))))
+  (reduce (lambda (total digit)
+            (+ (* total 10) digit))
+          digits))
 
 
 (defun palindromep (n &optional (radix 10))
@@ -295,6 +293,15 @@
   (let ((x (1+ (* 8 n))))
     (and (oddp x)
          (squarep x))))
+
+
+(defun pentagon (n)
+  (* n (- (* 3 n) 1) 1/2))
+
+(defun pentagonp (n)
+  ;; We can ignore the - branch of the quadratic equation because negative
+  ;; numbers aren't indexes.
+  (dividesp (+ 1 (sqrt (1+ (* 24 n)))) 6))
 
 
 (defun parse-strings-file (filename)
