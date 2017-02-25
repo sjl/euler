@@ -27,6 +27,14 @@
     (values (1+ (truncate (log (abs n) radix))))))
 
 
+(defun digits-to-number (digits)
+  (iterate (with result = 0)
+           (for d :in-whatever digits)
+           (mulf result 10)
+           (incf result d)
+           (finally (return result))))
+
+
 (defun definitely-palindrome-p (n)
   "Return whether `n` is a palindrome (in base 10), the slow-but-sure way."
   (let ((s (format nil "~D" n)))
@@ -717,8 +725,8 @@
   ;; 4, 5, 6, 7, 8 and 9?
   (-<> "0123456789"
     (gathering-vector (:size (factorial (length <>)))
-      (map-permutations #'gather <>))
-    (map-into <> #'parse-integer <>)
+      (map-permutations (compose #'gather #'parse-integer) <>
+                        :copy nil))
     (sort <> #'<)
     (elt <> (1- 1000000))))
 
@@ -900,6 +908,78 @@
       (t (+ (recur (- amount (first coins)) coins)
             (recur amount (rest coins)))))))
 
+(defun problem-32 ()
+  ;; We shall say that an n-digit number is pandigital if it makes use of all
+  ;; the digits 1 to n exactly once; for example, the 5-digit number, 15234, is
+  ;; 1 through 5 pandigital.
+  ;;
+  ;; The product 7254 is unusual, as the identity, 39 × 186 = 7254, containing
+  ;; multiplicand, multiplier, and product is 1 through 9 pandigital.
+  ;;
+  ;; Find the sum of all products whose multiplicand/multiplier/product identity
+  ;; can be written as a 1 through 9 pandigital.
+  ;;
+  ;; HINT: Some products can be obtained in more than one way so be sure to only
+  ;; include it once in your sum.
+  (labels ((split (digits a b)
+             (values (digits-to-number (subseq digits 0 a))
+                     (digits-to-number (subseq digits a (+ a b)))
+                     (digits-to-number (subseq digits (+ a b)))))
+           (check (digits a b)
+             (multiple-value-bind (a b c)
+                 (split digits a b)
+               (when (= (* a b) c)
+                 c))))
+    (-<> (gathering
+           (map-permutations (lambda (digits)
+                               (let ((c1 (check digits 3 2))
+                                     (c2 (check digits 4 1)))
+                                 (when c1 (gather c1))
+                                 (when c2 (gather c2))))
+                             #(1 2 3 4 5 6 7 8 9)
+                             :copy nil))
+      remove-duplicates
+      sum)))
+
+(defun problem-33 ()
+  ;; The fraction 49/98 is a curious fraction, as an inexperienced mathematician
+  ;; in attempting to simplify it may incorrectly believe that 49/98 = 4/8,
+  ;; which is correct, is obtained by cancelling the 9s.
+  ;;
+  ;; We shall consider fractions like, 30/50 = 3/5, to be trivial examples.
+  ;;
+  ;; There are exactly four non-trivial examples of this type of fraction, less
+  ;; than one in value, and containing two digits in the numerator and
+  ;; denominator.
+  ;;
+  ;; If the product of these four fractions is given in its lowest common terms,
+  ;; find the value of the denominator.
+  (labels ((safe/ (a b)
+             (unless (zerop b) (/ a b)))
+           (cancel (digit other digits)
+             (destructuring-bind (x y) digits
+               (remove nil (list (when (= digit x) (safe/ other y))
+                                 (when (= digit y) (safe/ other x))))))
+           (cancellations (numerator denominator)
+             (let ((nd (digits numerator))
+                   (dd (digits denominator)))
+               (append (cancel (first nd) (second nd) dd)
+                       (cancel (second nd) (first nd) dd))))
+           (curiousp (numerator denominator)
+             (member (/ numerator denominator)
+                     (cancellations numerator denominator)))
+           (trivialp (numerator denominator)
+             (and (dividesp numerator 10)
+                  (dividesp denominator 10))))
+    (iterate
+      (with result = 1)
+      (for numerator :from 10 :to 99)
+      (iterate (for denominator :from (1+ numerator) :to 99)
+               (when (and (curiousp numerator denominator)
+                          (not (trivialp numerator denominator)))
+                 (mulf result (/ numerator denominator))))
+      (finally (return (denominator result))))))
+
 
 ;;;; Tests --------------------------------------------------------------------
 (def-suite :euler)
@@ -936,6 +1016,8 @@
 (test p29 (is (= 9183 (problem-29))))
 (test p30 (is (= 443839 (problem-30))))
 (test p31 (is (= 73682 (problem-31))))
+(test p32 (is (= 45228 (problem-32))))
+(test p33 (is (= 100 (problem-33))))
 
 
 ;; (run! :euler)
