@@ -980,6 +980,19 @@
                  (mulf result (/ numerator denominator))))
       (finally (return (denominator result))))))
 
+(defun problem-34 ()
+  ;; 145 is a curious number, as 1! + 4! + 5! = 1 + 24 + 120 = 145.
+  ;;
+  ;; Find the sum of all numbers which are equal to the sum of the factorial of
+  ;; their digits.
+  ;;
+  ;; Note: as 1! = 1 and 2! = 2 are not sums they are not included.
+  (iterate
+    (for n :from 3 :to 1000000)
+    ;; have to use funcall here because `sum` is an iterate keyword.  kill me.
+    (when (= n (funcall #'sum (digits n) :key #'factorial))
+      (summing n))))
+
 
 ;;;; Tests --------------------------------------------------------------------
 (def-suite :euler)
@@ -1018,6 +1031,7 @@
 (test p31 (is (= 73682 (problem-31))))
 (test p32 (is (= 45228 (problem-32))))
 (test p33 (is (= 100 (problem-33))))
+(test p34 (is (= 40730 (problem-34))))
 
 
 ;; (run! :euler)
