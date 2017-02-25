@@ -1193,6 +1193,28 @@
                (when (= index 1000000)
                  (in top (terminate)))))))
 
+(defun problem-41 ()
+  ;; We shall say that an n-digit number is pandigital if it makes use of all
+  ;; the digits 1 to n exactly once. For example, 2143 is a 4-digit pandigital
+  ;; and is also prime.
+  ;;
+  ;; What is the largest n-digit pandigital prime that exists?
+  (flet ((pandigitals (n)
+           "Return a list of all `n`-digit pandigital numbers."
+           (gathering
+             (map-permutations (compose #'gather #'digits-to-number)
+                               (range 1 (1+ n))
+                               :copy nil))))
+    (iterate
+      ;; There's a clever observation which reduces the upper bound from 9 to
+      ;; 7 from "gamma" in the forum:
+      ;;
+      ;; > Note: Nine numbers cannot be done (1+2+3+4+5+6+7+8+9=45 => always dividable by 3)
+      ;; > Note: Eight numbers cannot be done (1+2+3+4+5+6+7+8=36 => always dividable by 3)
+      (for n :downfrom 7)
+      (thereis (apply (nullary #'max)
+                      (remove-if-not #'primep (pandigitals n)))))))
+
 
 ;;;; Tests --------------------------------------------------------------------
 (def-suite :euler)
@@ -1238,6 +1260,7 @@
 (test p38 (is (= 932718654 (problem-38))))
 (test p39 (is (= 840 (problem-39))))
 (test p40 (is (= 210 (problem-40))))
+(test p41 (is (= 7652413 (problem-41))))
 
 
 ;; (run! :euler)
