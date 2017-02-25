@@ -267,6 +267,37 @@
         (recur (mv* d triple))))))
 
 
+(defun squarep (n)
+  "Return whether `n` is a perfect square."
+  (= n (square (isqrt n))))
+
+
+(defun triangle (n)
+  "Return the `n`th triangle number (1-indexed because mathematicians are silly)."
+  (* 1/2 n (1+ n)))
+
+(defun trianglep (n)
+  "Return whether `n` is a triangle number."
+  ;; http://mathforum.org/library/drmath/view/57162.html
+  ;;
+  ;; A number is triangular if and only if 8T + 1 is an odd perfect square.
+  (let ((x (1+ (* 8 n))))
+    (and (oddp x)
+         (squarep x))))
+
+
+(defun parse-strings-file (filename)
+  (-<> filename
+    read-file-into-string
+    (substitute #\Space #\, <>)
+    read-all-from-string))
+
+
+(defun letter-number (char)
+  "Return the index of `char` in the alphabet (A being 1)."
+  (1+ (- (char-code (char-upcase char)) (char-code #\A))))
+
+
 ;;;; Problems -----------------------------------------------------------------
 (defun problem-1 ()
   ;; If we list all the natural numbers below 10 that are multiples of 3 or 5,
@@ -746,14 +777,10 @@
   ;; What is the total of all the name scores in the file?
   (labels ((read-names ()
              (-<> "data/22-names.txt"
-               read-file-into-string
-               (substitute #\Space #\, <>)
-               read-all-from-string
+               parse-strings-file
                (sort <> #'string<)))
-           (letter-score (letter)
-             (1+ (- (char-code letter) (char-code #\A))))
            (name-score (name)
-             (sum name :key #'letter-score)))
+             (sum name :key #'letter-number)))
     (iterate (for (position . name) :in
                   (enumerate (read-names) :start 1))
              (sum (* position (name-score name))))))
@@ -1215,6 +1242,26 @@
       (thereis (apply (nullary #'max)
                       (remove-if-not #'primep (pandigitals n)))))))
 
+(defun problem-42 ()
+  ;; The nth term of the sequence of triangle numbers is given by, tn = ½n(n+1);
+  ;; so the first ten triangle numbers are:
+  ;;
+  ;; 1, 3, 6, 10, 15, 21, 28, 36, 45, 55, ...
+  ;;
+  ;; By converting each letter in a word to a number corresponding to its
+  ;; alphabetical position and adding these values we form a word value. For
+  ;; example, the word value for SKY is 19 + 11 + 25 = 55 = t10. If the word
+  ;; value is a triangle number then we shall call the word a triangle word.
+  ;;
+  ;; Using words.txt (right click and 'Save Link/Target As...'), a 16K text file
+  ;; containing nearly two-thousand common English words, how many are triangle
+  ;; words?
+  (labels ((word-value (word)
+             (sum word :key #'letter-number))
+           (triangle-word-p (word)
+             (trianglep (word-value word))))
+    (count-if #'triangle-word-p (parse-strings-file "data/42-words.txt"))))
+
 
 ;;;; Tests --------------------------------------------------------------------
 (def-suite :euler)
@@ -1261,6 +1308,7 @@
 (test p39 (is (= 840 (problem-39))))
 (test p40 (is (= 210 (problem-40))))
 (test p41 (is (= 7652413 (problem-41))))
+(test p42 (is (= 210 (problem-42))))
 
 
 ;; (run! :euler)
