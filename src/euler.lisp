@@ -211,6 +211,62 @@
   (< (abs n) (expt 10 digits)))
 
 
+(defun adjoin% (list item &rest keyword-args)
+  (apply #'adjoin item list keyword-args))
+
+(define-modify-macro adjoinf (item &rest keyword-args) adjoin%)
+
+
+(defun mv* (matrix vector)
+  (iterate
+    (with (rows cols) = (array-dimensions matrix))
+    (initially (assert (= cols (length vector))))
+    (with result = (make-array rows :initial-element 0))
+    (for row :from 0 :below rows)
+    (iterate (for col :from 0 :below cols)
+             (for v = (aref vector col))
+             (for a = (aref matrix row col))
+             (incf (aref result row)
+                   (* v a)))
+    (finally (return result))))
+
+
+(defun pythagorean-triplet-p (a b c)
+  (= (+ (square a) (square b))
+     (square c)))
+
+(defun pythagorean-triplets-of-perimeter (p)
+  (iterate
+    (with result = '())
+    (for c :from 1 :to (- p 2))
+    (iterate
+      (for a :from 1 :below (min c (- p c)))
+      (for b = (- p c a))
+      (when (pythagorean-triplet-p a b c)
+        (adjoinf result (sort (list a b c) #'<)
+                 :test #'equal)))
+    (finally (return result))))
+
+
+(defun map-primitive-pythagorean-triplets (function stop-predicate)
+  ;; http://mathworld.wolfram.com/PythagoreanTriple.html
+  (let ((u #2A(( 1  2  2)
+               (-2 -1 -2)
+               ( 2  2  3)))
+        (a #2A(( 1  2  2)
+               ( 2  1  2)
+               ( 2  2  3)))
+        (d #2A((-1 -2 -2)
+               ( 2  1  2)
+               ( 2  2  3))))
+    (recursively ((triple (vector 3 4 5)))
+      (unless (apply stop-predicate (coerce triple 'list))
+        (apply function (coerce triple 'list))
+        (recur (mv* u triple))
+        (recur (mv* a triple))
+        (recur (mv* d triple))))))
+
+
 ;;;; Problems -----------------------------------------------------------------
 (defun problem-1 ()
   ;; If we list all the natural numbers below 10 that are multiples of 3 or 5,
@@ -252,7 +308,7 @@
   (iterate (for-nested ((i :from 0 :to 999)
                         (j :from 0 :to 999)))
            (for product = (* i j))
-           (when (definitely-palindrome-p product)
+           (when (palindromep product)
              (maximize product))))
 
 (defun problem-5 ()
@@ -326,16 +382,7 @@
   ;;
   ;; There exists exactly one Pythagorean triplet for which a + b + c = 1000.
   ;; Find the product abc.
-  (flet ((pythagorean-triplet-p (a b c)
-           (= (+ (square a) (square b))
-              (square c))))
-    ;; They must add up to 1000, so C can be at most 998.
-    ;; A can be at most 999 - C (to leave 1 for B).
-    (iterate (for c :from 998 :downto 1)
-             (iterate (for a :from (- 999 c) :downto 1)
-                      (for b = (- 1000 c a))
-                      (when (pythagorean-triplet-p a b c)
-                        (return-from problem-9 (* a b c)))))))
+  (product (first (pythagorean-triplets-of-perimeter 1000))))
 
 (defun problem-10 ()
   ;; The sum of the primes below 10 is 2 + 3 + 5 + 7 = 17.
@@ -1112,6 +1159,17 @@
                (when (pandigitalp result)
                  (in main (maximizing result)))))))
 
+(defun problem-39 ()
+  ;; If p is the perimeter of a right angle triangle with integral length sides,
+  ;; {a,b,c}, there are exactly three solutions for p = 120.
+  ;;
+  ;; {20,48,52}, {24,45,51}, {30,40,50}
+  ;;
+  ;; For which value of p ≤ 1000, is the number of solutions maximised?
+  (iterate
+    (for p :from 1 :to 1000)
+    (finding p :maximizing (length (pythagorean-triplets-of-perimeter p)))))
+
 
 ;;;; Tests --------------------------------------------------------------------
 (def-suite :euler)
@@ -1155,6 +1213,7 @@
 (test p36 (is (= 872187 (problem-36))))
 (test p37 (is (= 748317 (problem-37))))
 (test p38 (is (= 932718654 (problem-38))))
+(test p39 (is (= 840 (problem-39))))
 
 
 ;; (run! :euler)
