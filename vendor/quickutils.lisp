@@ -2,7 +2,7 @@
 ;;;; See http://quickutil.org for details.
 
 ;;;; To regenerate:
-;;;; (qtlc:save-utils-as "quickutils.lisp" :utilities '(:COMPOSE :CURRY :DEFINE-CONSTANT :ENSURE-BOOLEAN :MAP-PERMUTATIONS :N-GRAMS :RANGE :RCURRY :READ-FILE-INTO-STRING :SWITCH :WITH-GENSYMS) :ensure-package T :package "EULER.QUICKUTILS")
+;;;; (qtlc:save-utils-as "quickutils.lisp" :utilities '(:COMPOSE :CURRY :DEFINE-CONSTANT :ENSURE-BOOLEAN :MAP-PERMUTATIONS :MAXF :MINF :N-GRAMS :RANGE :RCURRY :READ-FILE-INTO-STRING :SWITCH :WITH-GENSYMS) :ensure-package T :package "EULER.QUICKUTILS")
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (unless (find-package "EULER.QUICKUTILS")
@@ -16,8 +16,8 @@
   (setf *utilities* (union *utilities* '(:MAKE-GENSYM-LIST :ENSURE-FUNCTION
                                          :COMPOSE :CURRY :DEFINE-CONSTANT
                                          :ENSURE-BOOLEAN :MAP-COMBINATIONS
-                                         :MAP-PERMUTATIONS :TAKE :N-GRAMS
-                                         :RANGE :RCURRY :ONCE-ONLY
+                                         :MAP-PERMUTATIONS :MAXF :MINF :TAKE
+                                         :N-GRAMS :RANGE :RCURRY :ONCE-ONLY
                                          :WITH-OPEN-FILE* :WITH-INPUT-FROM-FILE
                                          :READ-FILE-INTO-STRING
                                          :STRING-DESIGNATOR :WITH-GENSYMS
@@ -228,6 +228,16 @@ length of the delimited subsequence."
                                   :end end
                                   :length length
                                   :copy nil)))))))
+  
+
+  (define-modify-macro maxf (&rest numbers) max
+    "Modify-macro for `max`. Sets place designated by the first argument to the
+maximum of its original value and `numbers`.")
+  
+
+  (define-modify-macro minf (&rest numbers) min
+    "Modify-macro for `min`. Sets place designated by the first argument to the
+minimum of its original value and `numbers`.")
   
 
   (defun take (n sequence)
@@ -454,8 +464,8 @@ returns the values of `default` if no keys match."
     (generate-switch-body whole object clauses test key '(cerror "Return NIL from CSWITCH.")))
   
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (export '(compose curry define-constant ensure-boolean map-permutations
-            n-grams range rcurry read-file-into-string switch eswitch cswitch
-            with-gensyms with-unique-names)))
+  (export '(compose curry define-constant ensure-boolean map-permutations maxf
+            minf n-grams range rcurry read-file-into-string switch eswitch
+            cswitch with-gensyms with-unique-names)))
 
 ;;;; END OF quickutils.lisp ;;;;

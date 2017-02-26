@@ -9,6 +9,8 @@
                :define-constant
                :ensure-boolean
                :map-permutations
+               :maxf
+               :minf
                :n-grams
                :range
                :rcurry
