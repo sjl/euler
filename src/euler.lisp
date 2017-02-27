@@ -1417,6 +1417,15 @@
         (setf run 0))
       (finding (- i 3) :such-that (= run 4)))))
 
+(defun problem-48 ()
+  ;; The series, 1^1 + 2^2 + 3^3 + ... + 10^10 = 10405071317.
+  ;;
+  ;; Find the last ten digits of the series, 1^1 + 2^2 + 3^3 + ... + 1000^1000.
+  (-<> (range 1 (1+ 1000))
+    (mapcar #'expt <> <>)
+    sum
+    (mod <> (expt 10 10))))
+
 
 ;;;; Tests --------------------------------------------------------------------
 (def-suite :euler)
@@ -1469,6 +1478,7 @@
 (test p45 (is (= 1533776805 (problem-45))))
 (test p46 (is (= 5777 (problem-46))))
 (test p47 (is (= 134043 (problem-47))))
+(test p48 (is (= 9110846700 (problem-48))))
 
 
 ;; (run! :euler)
