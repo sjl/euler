@@ -1428,6 +1428,17 @@
 
 
 
+(defun problem-56 ()
+  ;; A googol (10^100) is a massive number: one followed by one-hundred zeros;
+  ;; 100^100 is almost unimaginably large: one followed by two-hundred zeros.
+  ;; Despite their size, the sum of the digits in each number is only 1.
+  ;;
+  ;; Considering natural numbers of the form, a^b, where a, b < 100, what is the
+  ;; maximum digital sum?
+  (iterate (for-nested ((a :from 1 :below 100)
+                        (b :from 1 :below 100)))
+           (maximizing (funcall #'sum (digits (expt a b))))))
+
 (defun problem-74 ()
   ;; The number 145 is well known for the property that the sum of the factorial
   ;; of its digits is equal to 145:
@@ -1518,6 +1529,9 @@
 (test p46 (is (= 5777 (problem-46))))
 (test p47 (is (= 134043 (problem-47))))
 (test p48 (is (= 9110846700 (problem-48))))
+
+(test p56 (is (= 972 (problem-56))))
+(test p74 (is (= 402 (problem-74))))
 
 
 ;; (run! :euler)
