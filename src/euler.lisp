@@ -1471,6 +1471,37 @@
       (mapcan #'digits <>)
       digits-to-number)))
 
+(defun problem-50 ()
+  ;; The prime 41, can be written as the sum of six consecutive primes:
+  ;;
+  ;; 41 = 2 + 3 + 5 + 7 + 11 + 13
+  ;;
+  ;; This is the longest sum of consecutive primes that adds to a prime below
+  ;; one-hundred.
+  ;;
+  ;; The longest sum of consecutive primes below one-thousand that adds to
+  ;; a prime, contains 21 terms, and is equal to 953.
+  ;;
+  ;; Which prime, below one-million, can be written as the sum of the most
+  ;; consecutive primes?
+  (let ((primes (coerce (primes-below 1000000) 'vector)))
+    (flet ((score (start)
+             (iterate
+               (with sum = 0)
+               (with score = 0)
+               (with winner = 0)
+               (for run :from 1)
+               (for prime :in-vector primes :from start)
+               (incf sum prime)
+               (while (< sum 1000000))
+               (when (primep sum)
+                 (setf score run
+                       winner sum))
+               (finally (return (values score winner))))))
+      (iterate
+        (for i :from 0 :below (length primes))
+        (for (values score winner) = (score i))
+        (finding winner :maximizing score)))))
 
 (defun problem-52 ()
   ;; It can be seen that the number, 125874, and its double, 251748, contain
@@ -1587,6 +1618,7 @@
 (test p47 (is (= 134043 (problem-47))))
 (test p48 (is (= 9110846700 (problem-48))))
 (test p49 (is (= 296962999629 (problem-49))))
+(test p50 (is (= 997651 (problem-50))))
 
 (test p52 (is (= 142857 (problem-52))))
 (test p56 (is (= 972 (problem-56))))
