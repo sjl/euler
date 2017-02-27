@@ -1487,12 +1487,11 @@
   (let ((primes (sieve 1000000)))
     (flet ((score (start)
              (iterate
-               (with sum = 0)
                (with score = 0)
                (with winner = 0)
                (for run :from 1)
                (for prime :in-vector primes :from start)
-               (incf sum prime)
+               (summing prime :into sum)
                (while (< sum 1000000))
                (when (primep sum)
                  (setf score run
