@@ -326,6 +326,14 @@
   (1+ (- (char-code (char-upcase char)) (char-code #\A))))
 
 
+(defun set-equal (list1 list2 &rest args)
+  (null (apply #'set-exclusive-or list1 list2 args)))
+
+(defun orderless-equal (list1 list2 &key (sort-predicate #'<))
+  (equal (sort (copy-seq list1) sort-predicate)
+         (sort (copy-seq list2) sort-predicate)))
+
+
 ;;;; Problems -----------------------------------------------------------------
 (defun problem-1 ()
   ;; If we list all the natural numbers below 10 that are multiples of 3 or 5,
@@ -1428,6 +1436,19 @@
 
 
 
+(defun problem-52 ()
+  ;; It can be seen that the number, 125874, and its double, 251748, contain
+  ;; exactly the same digits, but in a different order.
+  ;;
+  ;; Find the smallest positive integer, x, such that 2x, 3x, 4x, 5x, and 6x,
+  ;; contain the same digits.
+  (iterate (for i :from 1)
+           (for digits = (digits i))
+           (finding i :such-that
+                    (every (lambda (n)
+                             (orderless-equal digits (digits (* n i))))
+                           '(2 3 4 5 6)))))
+
 (defun problem-56 ()
   ;; A googol (10^100) is a massive number: one followed by one-hundred zeros;
   ;; 100^100 is almost unimaginably large: one followed by two-hundred zeros.
@@ -1530,6 +1551,7 @@
 (test p47 (is (= 134043 (problem-47))))
 (test p48 (is (= 9110846700 (problem-48))))
 
+(test p52 (is (= 142857 (problem-52))))
 (test p56 (is (= 972 (problem-56))))
 (test p74 (is (= 402 (problem-74))))
 
