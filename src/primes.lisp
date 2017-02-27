@@ -178,6 +178,19 @@
   (primes% (1+ min) max))
 
 
+(defun sieve (limit)
+  "Return a vector of all primes below `limit`."
+  (check-type limit (integer 0 #.array-dimension-limit))
+  (iterate
+    (with numbers = (make-array limit :initial-element 1 :element-type 'bit))
+    (for bit :in-vector numbers :with-index n :from 2)
+    (when (= 1 bit)
+      (collect n :result-type vector)
+      (iterate (for composite :from (* 2 n) :by n)
+               (while (< composite limit))
+               (setf (aref numbers composite) 0)))))
+
+
 (defun nth-prime (n)
   "Return the `n`th prime number."
   (if (= n 1)

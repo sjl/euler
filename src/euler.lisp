@@ -454,7 +454,7 @@
 (defun problem-10 ()
   ;; The sum of the primes below 10 is 2 + 3 + 5 + 7 = 17.
   ;; Find the sum of all the primes below two million.
-  (sum (primes-below 2000000)))
+  (sum (sieve 2000000)))
 
 (defun problem-11 ()
   ;; In the 20×20 grid below, four numbers along a diagonal line have been marked
@@ -1147,7 +1147,7 @@
              (mapcar (curry #'rotate n) (range 1 (digits-length n))))
            (circular-prime-p (n)
              (every #'primep (rotations n))))
-    (iterate (for i :in (primes-below 1000000))
+    (iterate (for i :in-vector (sieve 1000000))
              (counting (circular-prime-p i)))))
 
 (defun problem-36 ()
@@ -1394,7 +1394,7 @@
   ;; a prime and twice a square?
   (flet ((counterexamplep (n)
            (iterate
-             (for prime :in (primes-below n))
+             (for prime :in-vector (sieve n))
              (never (squarep (/ (- n prime) 2))))))
     (iterate
       (for i :from 1 :by 2)
@@ -1484,7 +1484,7 @@
   ;;
   ;; Which prime, below one-million, can be written as the sum of the most
   ;; consecutive primes?
-  (let ((primes (coerce (primes-below 1000000) 'vector)))
+  (let ((primes (sieve 1000000)))
     (flet ((score (start)
              (iterate
                (with sum = 0)
@@ -1502,6 +1502,7 @@
         (for i :from 0 :below (length primes))
         (for (values score winner) = (score i))
         (finding winner :maximizing score)))))
+
 
 (defun problem-52 ()
   ;; It can be seen that the number, 125874, and its double, 251748, contain
@@ -1565,6 +1566,7 @@
              (counting (= 60 (term-count i))))))
 
 
+
 ;;;; Tests --------------------------------------------------------------------
 (def-suite :euler)
 (in-suite :euler)
@@ -1610,7 +1612,7 @@
 (test p39 (is (= 840 (problem-39))))
 (test p40 (is (= 210 (problem-40))))
 (test p41 (is (= 7652413 (problem-41))))
-(test p42 (is (= 210 (problem-42))))
+(test p42 (is (= 162 (problem-42))))
 (test p43 (is (= 16695334890 (problem-43))))
 (test p44 (is (= 5482660 (problem-44))))
 (test p45 (is (= 1533776805 (problem-45))))
