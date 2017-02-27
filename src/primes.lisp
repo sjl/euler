@@ -126,6 +126,7 @@
           :do (return nil)
           :finally (return t)))))
 
+
 (defun primep (n)
   "Return (less slowly) whether `n` is prime."
   (cond
@@ -135,6 +136,15 @@
     ((evenp n) nil)
     ((< n 100000) (brute-force-prime-p n))
     (t (miller-rabin-prime-p n))))
+
+(defun unitp (n)
+  "Return whether `n` is 1."
+  (= n 1))
+
+(defun compositep (n)
+  "Return whether `n` is composite."
+  (and (not (unitp n))
+       (not (primep n))))
 
 
 (defun primes-below (n)
