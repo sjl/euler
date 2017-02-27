@@ -2,7 +2,7 @@
 ;;;; See http://quickutil.org for details.
 
 ;;;; To regenerate:
-;;;; (qtlc:save-utils-as "quickutils.lisp" :utilities '(:COMPOSE :CURRY :DEFINE-CONSTANT :ENSURE-BOOLEAN :MAP-PERMUTATIONS :MAXF :MINF :N-GRAMS :RANGE :RCURRY :READ-FILE-INTO-STRING :SWITCH :WITH-GENSYMS) :ensure-package T :package "EULER.QUICKUTILS")
+;;;; (qtlc:save-utils-as "quickutils.lisp" :utilities '(:COMPOSE :CURRY :DEFINE-CONSTANT :ENSURE-BOOLEAN :EQUIVALENCE-CLASSES :MAP-COMBINATIONS :MAP-PERMUTATIONS :MAXF :MINF :N-GRAMS :RANGE :RCURRY :READ-FILE-INTO-STRING :SWITCH :WITH-GENSYMS) :ensure-package T :package "EULER.QUICKUTILS")
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (unless (find-package "EULER.QUICKUTILS")
@@ -15,10 +15,11 @@
 (when (boundp '*utilities*)
   (setf *utilities* (union *utilities* '(:MAKE-GENSYM-LIST :ENSURE-FUNCTION
                                          :COMPOSE :CURRY :DEFINE-CONSTANT
-                                         :ENSURE-BOOLEAN :MAP-COMBINATIONS
-                                         :MAP-PERMUTATIONS :MAXF :MINF :TAKE
-                                         :N-GRAMS :RANGE :RCURRY :ONCE-ONLY
-                                         :WITH-OPEN-FILE* :WITH-INPUT-FROM-FILE
+                                         :ENSURE-BOOLEAN :EQUIVALENCE-CLASSES
+                                         :MAP-COMBINATIONS :MAP-PERMUTATIONS
+                                         :MAXF :MINF :TAKE :N-GRAMS :RANGE
+                                         :RCURRY :ONCE-ONLY :WITH-OPEN-FILE*
+                                         :WITH-INPUT-FROM-FILE
                                          :READ-FILE-INTO-STRING
                                          :STRING-DESIGNATOR :WITH-GENSYMS
                                          :EXTRACT-FUNCTION-NAME :SWITCH))))
@@ -135,6 +136,32 @@ equal under `test` to result of evaluating `initial-value`."
   (defun ensure-boolean (x)
     "Convert `x` into a Boolean value."
     (and x t))
+  
+
+  (defun equivalence-classes (equiv seq)
+    "Partition the sequence `seq` into a list of equivalence classes
+defined by the equivalence relation `equiv`."
+    (let ((classes nil))
+      (labels ((find-equivalence-class (x)
+                 (member-if (lambda (class)
+                              (funcall equiv x (car class)))
+                            classes))
+               
+               (add-to-class (x)
+                 (let ((class (find-equivalence-class x)))
+                   (if class
+                       (push x (car class))
+                       (push (list x) classes)))))
+        (declare (dynamic-extent (function find-equivalence-class)
+                                 (function add-to-class))
+                 (inline find-equivalence-class
+                         add-to-class))
+        
+        ;; Partition into equivalence classes.
+        (map nil #'add-to-class seq)
+        
+        ;; Return the classes.
+        classes)))
   
 
   (defun map-combinations (function sequence &key (start 0) end length (copy t))
@@ -464,8 +491,9 @@ returns the values of `default` if no keys match."
     (generate-switch-body whole object clauses test key '(cerror "Return NIL from CSWITCH.")))
   
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (export '(compose curry define-constant ensure-boolean map-permutations maxf
-            minf n-grams range rcurry read-file-into-string switch eswitch
-            cswitch with-gensyms with-unique-names)))
+  (export '(compose curry define-constant ensure-boolean equivalence-classes
+            map-combinations map-permutations maxf minf n-grams range rcurry
+            read-file-into-string switch eswitch cswitch with-gensyms
+            with-unique-names)))
 
 ;;;; END OF quickutils.lisp ;;;;

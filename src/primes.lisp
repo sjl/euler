@@ -147,18 +147,36 @@
        (not (primep n))))
 
 
+(defun primes% (start end)
+  (assert (<= start end))
+  (if (= start end)
+    nil
+    (let ((odd-primes (iterate (for i :from (if (oddp start)
+                                              start
+                                              (1+ start))
+                                    :by 2 :below end)
+                               (when (primep i)
+                                 (collect i)))))
+      (if (<= start 2)
+        (cons 2 odd-primes)
+        odd-primes))))
+
 (defun primes-below (n)
   "Return the prime numbers less than `n`."
-  (cond
-    ((<= n 2) (list))
-    ((= n 3) (list 2))
-    (t (cons 2 (loop :for i :from 3 :by 2 :below n
-                     :when (primep i)
-                     :collect i)))))
+  (primes% 2 n))
 
 (defun primes-upto (n)
   "Return the prime numbers less than or equal to `n`."
-  (primes-below (1+ n)))
+  (primes% 2 (1+ n)))
+
+(defun primes-in (min max)
+  "Return the prime numbers `p` such that `min` <= `p` <= `max`."
+  (primes% min (1+ max)))
+
+(defun primes-between (min max)
+  "Return the prime numbers `p` such that `min` < `p` < `max`."
+  (primes% (1+ min) max))
+
 
 (defun nth-prime (n)
   "Return the `n`th prime number."

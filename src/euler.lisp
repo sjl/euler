@@ -1434,6 +1434,42 @@
     sum
     (mod <> (expt 10 10))))
 
+(defun problem-49 ()
+  ;; The arithmetic sequence, 1487, 4817, 8147, in which each of the terms
+  ;; increases by 3330, is unusual in two ways: (i) each of the three terms are
+  ;; prime, and, (ii) each of the 4-digit numbers are permutations of one
+  ;; another.
+  ;;
+  ;; There are no arithmetic sequences made up of three 1-, 2-, or 3-digit
+  ;; primes, exhibiting this property, but there is one other 4-digit increasing
+  ;; sequence.
+  ;;
+  ;; What 12-digit number do you form by concatenating the three terms in this
+  ;; sequence?
+  (labels ((permutation= (a b)
+             (orderless-equal (digits a) (digits b)))
+           (length>=3 (list)
+             (>= (length list) 3))
+           (arithmetic-sequence-p (seq)
+             (apply #'= (mapcar (curry #'apply #'-)
+                                (n-grams 2 seq))))
+           (has-arithmetic-sequence-p (seq)
+             (map-combinations
+               (lambda (s)
+                 (when (arithmetic-sequence-p s)
+                   (return-from has-arithmetic-sequence-p s)))
+               (sort seq #'<)
+               :length 3)
+             nil))
+    (-<> (primes-in 1000 9999)
+      (equivalence-classes #'permutation= <>) ; find all permutation groups
+      (remove-if-not #'length>=3 <>) ; make sure they have at leat 3 elements
+      (mapcar #'has-arithmetic-sequence-p <>)
+      (remove nil <>)
+      (remove-if (lambda (s) (= (first s) 1487)) <>) ; remove the example
+      first
+      (mapcan #'digits <>)
+      digits-to-number)))
 
 
 (defun problem-52 ()
@@ -1550,6 +1586,7 @@
 (test p46 (is (= 5777 (problem-46))))
 (test p47 (is (= 134043 (problem-47))))
 (test p48 (is (= 9110846700 (problem-48))))
+(test p49 (is (= 296962999629 (problem-49))))
 
 (test p52 (is (= 142857 (problem-52))))
 (test p56 (is (= 972 (problem-56))))

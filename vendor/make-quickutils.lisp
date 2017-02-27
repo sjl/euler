@@ -8,6 +8,8 @@
                :curry
                :define-constant
                :ensure-boolean
+               :equivalence-classes
+               :map-combinations
                :map-permutations
                :maxf
                :minf
