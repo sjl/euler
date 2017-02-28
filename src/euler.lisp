@@ -1650,6 +1650,34 @@
     (iterate (for i :from 1 :below 1000000)
              (counting (= 60 (term-count i))))))
 
+(defun problem-145 ()
+  ;; Some positive integers n have the property that the sum [ n + reverse(n) ]
+  ;; consists entirely of odd (decimal) digits. For instance, 36 + 63 = 99 and
+  ;; 409 + 904 = 1313. We will call such numbers reversible; so 36, 63, 409, and
+  ;; 904 are reversible. Leading zeroes are not allowed in either n or
+  ;; reverse(n).
+  ;;
+  ;; There are 120 reversible numbers below one-thousand.
+  ;;
+  ;; How many reversible numbers are there below one-billion (10^9)?
+  (labels ((reverse-integer (n)
+             (digits-to-number (nreverse (digits n))))
+           (reversiblep (n)
+             (let ((reversed (reverse-integer n)))
+               (values (unless (zerop (digit 0 n))
+                         (every #'oddp (digits (+ n reversed))))
+                       reversed))))
+    (iterate
+      ;; TODO: improve this one
+      ;; (with limit = 1000000000) there are no 9-digit reversible numbers...
+      (with limit = 100000000)
+      (with done = (make-array limit :element-type 'bit :initial-element 0))
+      (for i :from 1 :below limit)
+      (unless (= 1 (aref done i))
+        (for (values reversible j) = (reversiblep i))
+        (setf (aref done j) 1)
+        (when reversible
+          (sum (if (= i j) 1 2)))))))
 
 
 ;;;; Tests --------------------------------------------------------------------
@@ -1712,6 +1740,7 @@
 
 (test p56 (is (= 972 (problem-56))))
 (test p74 (is (= 402 (problem-74))))
+(test p145 (is (= 608720 (problem-145))))
 
 
 ;; (run! :euler)
