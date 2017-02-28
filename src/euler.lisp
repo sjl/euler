@@ -52,15 +52,18 @@
                           n))))
 
 
+(defun sort< (sequence)
+  (sort sequence #'<))
+
+
 (defun divisors (n)
-  (sort (iterate (for i :from 1 :to (sqrt n))
+  (sort< (iterate (for i :from 1 :to (sqrt n))
                  (when (dividesp n i)
                    (collect i)
                    (let ((j (/ n i)))
                      ;; don't collect the square root twice
                      (unless (= i j)
-                       (collect j)))))
-        #'<))
+                       (collect j)))))))
 
 (defun proper-divisors (n)
   (remove n (divisors n)))
@@ -196,8 +199,8 @@
     (pandigitalp 123 0 3) ; => nil
 
   "
-  (equal (range start (1+ end))
-         (sort (digits integer) #'<)))
+  (equal (irange start end)
+         (sort< (digits integer))))
 
 (defun pandigitals (&optional (start 1) (end 9))
   "Return a list of all `start` to `end` (inclusive) pandigital numbers."
@@ -207,8 +210,15 @@
                         ;; to include those with a 0 first.
                         (unless (zerop (first digits))
                           (gather (digits-to-number digits))))
-                      (range start (1+ end))
+                      (irange start end)
                       :copy nil)))
+
+
+(defun permutations (sequence &key length)
+  (gathering (map-permutations #'gather sequence :length length)))
+
+(defun combinations (sequence &key length)
+  (gathering (map-combinations #'gather sequence :length length)))
 
 
 (defun-inline digits< (n digits)
@@ -252,7 +262,7 @@
       (for a :from 1 :below (min c (- p c)))
       (for b = (- p c a))
       (when (pythagorean-triplet-p a b c)
-        (adjoinf result (sort (list a b c) #'<)
+        (adjoinf result (sort< (list a b c))
                  :test #'equal)))
     (finally (return result))))
 
@@ -334,6 +344,16 @@
          (sort (copy-seq list2) sort-predicate)))
 
 
+(defun irange (start end &key (step 1) (key 'identity))
+  "Inclusive `range`."
+  (range start (1+ end) :step step :key key))
+
+
+(defun length= (n sequence)
+  (= n (length sequence)))
+
+
+
 ;;;; Problems -----------------------------------------------------------------
 (defun problem-1 ()
   ;; If we list all the natural numbers below 10 that are multiples of 3 or 5,
@@ -397,7 +417,7 @@
     ;; anything divisible by 16 is automatically divisible by 8
     ;; anything divisible by 18 is automatically divisible by 9
     ;; anything divisible by 20 is automatically divisible by 10
-    (with divisors = (range 11 21))
+    (with divisors = (irange 11 20))
     (for i :from 20 :by 20) ; it must be divisible by 20
     (finding i :such-that (every (lambda (n) (dividesp i n))
                                  divisors))))
@@ -415,9 +435,9 @@
   ;; Find the difference between the sum of the squares of the first one hundred
   ;; natural numbers and the square of the sum.
   (flet ((sum-of-squares (to)
-           (sum (range 1 (1+ to) :key #'square)))
+           (sum (irange 1 to :key #'square)))
          (square-of-sum (to)
-           (square (sum (range 1 (1+ to))))))
+           (square (sum (irange 1 to)))))
     (abs (- (sum-of-squares 100) ; apparently it wants the absolute value
             (square-of-sum 100)))))
 
@@ -706,7 +726,7 @@
            (silly-british-letters (n)
              (+ (letters n)
                 (if (has-british-and n) 0 3))))
-    (sum (range 1 (1+ 1000))
+    (sum (irange 1 1000)
          :key #'silly-british-letters)))
 
 (defun problem-18 ()
@@ -843,12 +863,12 @@
   (let* ((limit 28123)
          (abundant-numbers
            (make-hash-set :initial-contents
-                          (remove-if-not #'abundantp (range 1 (1+ limit))))))
+                          (remove-if-not #'abundantp (irange 1 limit)))))
     (flet ((abundant-sum-p (n)
              (iterate (for a :in-hashset abundant-numbers)
                       (when (hset-contains-p abundant-numbers (- n a))
                         (return t)))))
-      (sum (remove-if #'abundant-sum-p (range 1 (1+ limit)))))))
+      (sum (remove-if #'abundant-sum-p (irange 1 limit))))))
 
 (defun problem-24 ()
   ;; A permutation is an ordered arrangement of objects. For example, 3124 is
@@ -1429,7 +1449,7 @@
   ;; The series, 1^1 + 2^2 + 3^3 + ... + 10^10 = 10405071317.
   ;;
   ;; Find the last ten digits of the series, 1^1 + 2^2 + 3^3 + ... + 1000^1000.
-  (-<> (range 1 (1+ 1000))
+  (-<> (irange 1 1000)
     (mapcar #'expt <> <>)
     sum
     (mod <> (expt 10 10))))
@@ -1502,6 +1522,45 @@
         (for (values score winner) = (score i))
         (finding winner :maximizing score)))))
 
+(defun problem-51 ()
+  ;; By replacing the 1st digit of the 2-digit number *3, it turns out that six
+  ;; of the nine possible values: 13, 23, 43, 53, 73, and 83, are all prime.
+  ;;
+  ;; By replacing the 3rd and 4th digits of 56**3 with the same digit, this
+  ;; 5-digit number is the first example having seven primes among the ten
+  ;; generated numbers, yielding the family: 56003, 56113, 56333, 56443, 56663,
+  ;; 56773, and 56993. Consequently 56003, being the first member of this
+  ;; family, is the smallest prime with this property.
+  ;;
+  ;; Find the smallest prime which, by replacing part of the number (not
+  ;; necessarily adjacent digits) with the same digit, is part of an eight prime
+  ;; value family.
+  (labels
+      ((patterns (prime)
+         (iterate (with size = (digits-length prime))
+                  (with indices = (range 0 size))
+                  (for i :from 1 :below size)
+                  (appending (combinations indices :length i))))
+       (apply-pattern-digit (prime pattern new-digit)
+         (iterate (with result = (digits prime))
+                  (for index :in pattern)
+                  (when (and (zerop index) (zerop new-digit))
+                    (leave))
+                  (setf (nth index result) new-digit)
+                  (finally (return (digits-to-number result)))))
+       (apply-pattern (prime pattern)
+         (iterate (for digit in (irange 0 9))
+                  (for result = (apply-pattern-digit prime pattern digit))
+                  (when (and result (primep result))
+                    (collect result))))
+       (apply-patterns (prime)
+         (mapcar (curry #'apply-pattern prime) (patterns prime)))
+       (winnerp (prime)
+         (find-if (curry #'length= 8) (apply-patterns prime))))
+    (-<> (iterate (for i :from 3 :by 2)
+                  (thereis (and (primep i) (winnerp i))))
+      (sort< <>)
+      first)))
 
 (defun problem-52 ()
   ;; It can be seen that the number, 125874, and its double, 251748, contain
@@ -1515,6 +1574,7 @@
                     (every (lambda (n)
                              (orderless-equal digits (digits (* n i))))
                            '(2 3 4 5 6)))))
+
 
 (defun problem-56 ()
   ;; A googol (10^100) is a massive number: one followed by one-hundred zeros;
@@ -1620,8 +1680,9 @@
 (test p48 (is (= 9110846700 (problem-48))))
 (test p49 (is (= 296962999629 (problem-49))))
 (test p50 (is (= 997651 (problem-50))))
-
+(test p51 (is (= 121313 (problem-51))))
 (test p52 (is (= 142857 (problem-52))))
+
 (test p56 (is (= 972 (problem-56))))
 (test p74 (is (= 402 (problem-74))))
 
