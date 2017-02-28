@@ -1575,6 +1575,32 @@
                              (orderless-equal digits (digits (* n i))))
                            '(2 3 4 5 6)))))
 
+(defun problem-53 ()
+  ;; There are exactly ten ways of selecting three from five, 12345:
+  ;;
+  ;; 123, 124, 125, 134, 135, 145, 234, 235, 245, and 345
+  ;;
+  ;; In combinatorics, we use the notation, 5C3 = 10.
+  ;;
+  ;; In general,
+  ;;
+  ;;   nCr = n! / r!(n−r)!
+  ;;
+  ;; where r ≤ n, n! = n×(n−1)×...×3×2×1, and 0! = 1.
+  ;;
+  ;; It is not until n = 23, that a value exceeds one-million: 23C10 = 1144066.
+  ;;
+  ;; How many, not necessarily distinct, values of nCr, for 1 ≤ n ≤ 100, are
+  ;; greater than one-million?
+
+  (iterate
+    main
+    (for n :from 1 :to 100)
+    (iterate
+      (for r :from 1 :to n)
+      (for nCr = (binomial-coefficient n r))
+      (in main (counting (> nCr 1000000))))))
+
 
 (defun problem-56 ()
   ;; A googol (10^100) is a massive number: one followed by one-hundred zeros;
@@ -1682,6 +1708,7 @@
 (test p50 (is (= 997651 (problem-50))))
 (test p51 (is (= 121313 (problem-51))))
 (test p52 (is (= 142857 (problem-52))))
+(test p53 (is (= 4075 (problem-53))))
 
 (test p56 (is (= 972 (problem-56))))
 (test p74 (is (= 402 (problem-74))))
