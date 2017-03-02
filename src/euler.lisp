@@ -10,6 +10,18 @@
           :initially (funcall ,f ,value)
           :then (funcall ,f ,var))))))
 
+(defmacro-driver (FOR var IN-LOOPING list)
+  (let ((kwd (if generate 'generate 'for)))
+    (with-gensyms (l remaining)
+      `(progn
+         (with ,l = ,list)
+         (,kwd (,var . ,remaining)
+          :next (if-first-time
+                  ,l
+                  (if (null ,remaining)
+                    ,l
+                    ,remaining)))))))
+
 
 (defmacro-driver (FOR var IN-DIGITS-OF integer &optional RADIX (radix 10))
   "Iterate `var` through the digits of `integer` in base `radix`, low-order first."
@@ -1743,7 +1755,64 @@
       (for ratio = (/ primes count))
       (finding size :such-that (< ratio 1/10)))))
 
-
+(defun problem-59 ()
+  ;; Each character on a computer is assigned a unique code and the preferred
+  ;; standard is ASCII (American Standard Code for Information Interchange).
+  ;; For example, uppercase A = 65, asterisk (*) = 42, and lowercase k = 107.
+  ;;
+  ;; A modern encryption method is to take a text file, convert the bytes to
+  ;; ASCII, then XOR each byte with a given value, taken from a secret key. The
+  ;; advantage with the XOR function is that using the same encryption key on
+  ;; the cipher text, restores the plain text; for example, 65 XOR 42 = 107,
+  ;; then 107 XOR 42 = 65.
+  ;;
+  ;; For unbreakable encryption, the key is the same length as the plain text
+  ;; message, and the key is made up of random bytes. The user would keep the
+  ;; encrypted message and the encryption key in different locations, and
+  ;; without both "halves", it is impossible to decrypt the message.
+  ;;
+  ;; Unfortunately, this method is impractical for most users, so the modified
+  ;; method is to use a password as a key. If the password is shorter than the
+  ;; message, which is likely, the key is repeated cyclically throughout the
+  ;; message. The balance for this method is using a sufficiently long password
+  ;; key for security, but short enough to be memorable.
+  ;;
+  ;; Your task has been made easy, as the encryption key consists of three lower
+  ;; case characters. Using cipher.txt (right click and 'Save Link/Target
+  ;; As...'), a file containing the encrypted ASCII codes, and the knowledge
+  ;; that the plain text must contain common English words, decrypt the message
+  ;; and find the sum of the ASCII values in the original text.
+  (let* ((data (-<> "data/59-cipher.txt"
+                 read-file-into-string
+                 (substitute #\space #\, <>)
+                 read-all-from-string))
+         (raw-words (-<> "/usr/share/dict/words"
+                      read-file-into-string
+                      (cl-strings:split <> #\newline)
+                      (mapcar #'string-downcase <>)))
+         (words (make-hash-set :test 'equal :initial-contents raw-words)))
+    (labels
+        ((stringify (codes)
+           (map 'string #'code-char codes))
+         (apply-cipher (key)
+           (iterate (for number :in data)
+                    (for k :in-looping key)
+                    (collect (logxor number k))))
+         (score-keyword (keyword)
+           (-<> (apply-cipher (coerce keyword 'list))
+             (stringify <>)
+             (string-downcase <>)
+             (cl-strings:split <>)
+             (remove-if-not (curry #'hset-contains-p words) <>)
+             length))
+         (answer (keyword)
+           (sum (apply-cipher (coerce keyword 'list)))))
+      (answer
+        (iterate (for-nested ((a :from (char-code #\a) :to (char-code #\z))
+                              (b :from (char-code #\a) :to (char-code #\z))
+                              (c :from (char-code #\a) :to (char-code #\z))))
+                 (for keyword = (list a b c))
+                 (finding keyword :maximizing (score-keyword keyword)))))))
 
 
 
@@ -1874,6 +1943,7 @@
 (test p56 (is (= 972 (problem-56))))
 (test p57 (is (= 153 (problem-57))))
 (test p58 (is (= 26241 (problem-58))))
+(test p59 (is (= 107359 (problem-59))))
 
 (test p74 (is (= 402 (problem-74))))
 (test p145 (is (= 608720 (problem-145))))
