@@ -1799,20 +1799,19 @@
                     (for k :in-looping key)
                     (collect (logxor number k))))
          (score-keyword (keyword)
-           (-<> (apply-cipher (coerce keyword 'list))
+           (-<> (apply-cipher keyword)
              (stringify <>)
              (string-downcase <>)
              (cl-strings:split <>)
              (remove-if-not (curry #'hset-contains-p words) <>)
              length))
          (answer (keyword)
-           (sum (apply-cipher (coerce keyword 'list)))))
-      (answer
-        (iterate (for-nested ((a :from (char-code #\a) :to (char-code #\z))
-                              (b :from (char-code #\a) :to (char-code #\z))
-                              (c :from (char-code #\a) :to (char-code #\z))))
-                 (for keyword = (list a b c))
-                 (finding keyword :maximizing (score-keyword keyword)))))))
+           (sum (apply-cipher keyword))))
+      (iterate (for-nested ((a :from (char-code #\a) :to (char-code #\z))
+                            (b :from (char-code #\a) :to (char-code #\z))
+                            (c :from (char-code #\a) :to (char-code #\z))))
+               (for keyword = (list a b c))
+               (finding (answer keyword) :maximizing (score-keyword keyword))))))
 
 
 
