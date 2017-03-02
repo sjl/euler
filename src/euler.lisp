@@ -1,6 +1,16 @@
 (in-package :euler)
 
 ;;;; Utils --------------------------------------------------------------------
+(defmacro-driver (FOR var ITERATING function INITIALLY value)
+  (let ((kwd (if generate 'generate 'for)))
+    (with-gensyms (f)
+      `(progn
+         (with ,f = ,function)
+         (,kwd ,var
+          :initially (funcall ,f ,value)
+          :then (funcall ,f ,var))))))
+
+
 (defmacro-driver (FOR var IN-DIGITS-OF integer &optional RADIX (radix 10))
   "Iterate `var` through the digits of `integer` in base `radix`, low-order first."
   (let ((kwd (if generate 'generate 'for)))
@@ -28,9 +38,11 @@
 
 
 (defun digits-to-number (digits)
-  (reduce (lambda (total digit)
-            (+ (* total 10) digit))
-          digits))
+  (if digits
+    (reduce (lambda (total digit)
+              (+ (* total 10) digit))
+            digits)
+    0))
 
 
 (defun palindromep (n &optional (radix 10))
@@ -352,6 +364,9 @@
 (defun length= (n sequence)
   (= n (length sequence)))
 
+
+(defun reverse-integer (n)
+  (digits-to-number (nreverse (digits n))))
 
 
 ;;;; Problems -----------------------------------------------------------------
@@ -1641,9 +1656,42 @@
            (for p2 = (drop 5 cards))
            (counting (euler.poker::poker-hand-beats-p p1 p2))))
 
-
-
-
+(defun problem-55 ()
+  ;; If we take 47, reverse and add, 47 + 74 = 121, which is palindromic.
+  ;;
+  ;; Not all numbers produce palindromes so quickly. For example,
+  ;;
+  ;; 349 + 943 = 1292,
+  ;; 1292 + 2921 = 4213
+  ;; 4213 + 3124 = 7337
+  ;;
+  ;; That is, 349 took three iterations to arrive at a palindrome.
+  ;;
+  ;; Although no one has proved it yet, it is thought that some numbers, like
+  ;; 196, never produce a palindrome. A number that never forms a palindrome
+  ;; through the reverse and add process is called a Lychrel number. Due to the
+  ;; theoretical nature of these numbers, and for the purpose of this problem,
+  ;; we shall assume that a number is Lychrel until proven otherwise. In
+  ;; addition you are given that for every number below ten-thousand, it will
+  ;; either (i) become a palindrome in less than fifty iterations, or, (ii) no
+  ;; one, with all the computing power that exists, has managed so far to map it
+  ;; to a palindrome. In fact, 10677 is the first number to be shown to require
+  ;; over fifty iterations before producing a palindrome:
+  ;; 4668731596684224866951378664 (53 iterations, 28-digits).
+  ;;
+  ;; Surprisingly, there are palindromic numbers that are themselves Lychrel
+  ;; numbers; the first example is 4994.
+  ;;
+  ;; How many Lychrel numbers are there below ten-thousand?
+  (labels ((lychrel (n)
+             (+ n (reverse-integer n)))
+           (lychrelp (n)
+             (iterate
+               (repeat 50)
+               (for i :iterating #'lychrel :initially n)
+               (never (palindromep i)))))
+    (iterate (for i :from 0 :below 10000)
+             (counting (lychrelp i)))))
 
 (defun problem-56 ()
   ;; A googol (10^100) is a massive number: one followed by one-hundred zeros;
@@ -1655,6 +1703,33 @@
   (iterate (for-nested ((a :from 1 :below 100)
                         (b :from 1 :below 100)))
            (maximizing (funcall #'sum (digits (expt a b))))))
+
+(defun problem-57 ()
+  ;; It is possible to show that the square root of two can be expressed as an
+  ;; infinite continued fraction.
+  ;;
+  ;; √ 2 = 1 + 1/(2 + 1/(2 + 1/(2 + ... ))) = 1.414213...
+  ;;
+  ;; By expanding this for the first four iterations, we get:
+  ;;
+  ;; 1 + 1/2 = 3/2 = 1.5
+  ;; 1 + 1/(2 + 1/2) = 7/5 = 1.4
+  ;; 1 + 1/(2 + 1/(2 + 1/2)) = 17/12 = 1.41666...
+  ;; 1 + 1/(2 + 1/(2 + 1/(2 + 1/2))) = 41/29 = 1.41379...
+  ;;
+  ;; The next three expansions are 99/70, 239/169, and 577/408, but the eighth
+  ;; expansion, 1393/985, is the first example where the number of digits in the
+  ;; numerator exceeds the number of digits in the denominator.
+  ;;
+  ;; In the first one-thousand expansions, how many fractions contain
+  ;; a numerator with more digits than denominator?
+  (iterate
+    (repeat 1000)
+    (for i :initially 1/2 :then (/ (+ 2 i)))
+    (for expansion = (1+ i))
+    (counting (> (digits-length (numerator expansion))
+                 (digits-length (denominator expansion))))))
+
 
 (defun problem-74 ()
   ;; The number 145 is well known for the property that the sum of the factorial
@@ -1703,13 +1778,11 @@
   ;; There are 120 reversible numbers below one-thousand.
   ;;
   ;; How many reversible numbers are there below one-billion (10^9)?
-  (labels ((reverse-integer (n)
-             (digits-to-number (nreverse (digits n))))
-           (reversiblep (n)
-             (let ((reversed (reverse-integer n)))
-               (values (unless (zerop (digit 0 n))
-                         (every #'oddp (digits (+ n reversed))))
-                       reversed))))
+  (flet ((reversiblep (n)
+           (let ((reversed (reverse-integer n)))
+             (values (unless (zerop (digit 0 n))
+                       (every #'oddp (digits (+ n reversed))))
+                     reversed))))
     (iterate
       ;; TODO: improve this one
       ;; (with limit = 1000000000) there are no 9-digit reversible numbers...
@@ -1781,8 +1854,10 @@
 (test p52 (is (= 142857 (problem-52))))
 (test p53 (is (= 4075 (problem-53))))
 (test p54 (is (= 376 (problem-54))))
-
+(test p55 (is (= 249 (problem-55))))
 (test p56 (is (= 972 (problem-56))))
+(test p57 (is (= 153 (problem-57))))
+
 (test p74 (is (= 402 (problem-74))))
 (test p145 (is (= 608720 (problem-145))))
 
