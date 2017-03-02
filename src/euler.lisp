@@ -151,34 +151,24 @@
            (finding i :such-that (= 1 (mod v modulus)))))
 
 
-(defun number-spiral (size)
-  ;; See problem 28
-  (assert (oddp size) (size))
-  (flet ((turn (dx dy)
-           (cond
-             ((and (= dx  1) (= dy  0)) (values  0  1))
-             ((and (= dx -1) (= dy  0)) (values  0 -1))
-             ((and (= dx  0) (= dy  1)) (values -1  0))
-             ((and (= dx  0) (= dy -1)) (values  1  0)))))
-    (iterate
-      (with array = (make-array (list size size)))
-      (with i = 1)
-      (with x = (floor (/ size 2)))
-      (with y = (floor (/ size 2)))
-      (with dx = 1)
-      (with dy = 0)
-      (initially (setf (aref array y x) i))
-      (for counter :from 1 :by 1/2)
-      (for run-length = (truncate counter))
-      (iterate (repeat run-length)
-               (incf i)
-               (incf x dx)
-               (incf y dy)
-               (if (and (in-range-p 0 x size)
-                        (in-range-p 0 y size))
-                 (setf (aref array y x) i)
-                 (return-from number-spiral array)))
-      (setf (values dx dy) (turn dx dy)))))
+(defun number-spiral-corners (size)
+  "Return a list of the corner values of a 'number spiral' of size `size`.
+
+  `size` must be odd.  The order of the corners in the resulting list is
+  unspecified.
+
+  Note that the \"spiral\" of size one has just a single \"corner\": `1`.
+
+  "
+  (assert (oddp size))
+  (if (= 1 size)
+    (list 1)
+    (let ((leg (1- size))
+          (final (square size)))
+      (list (- final (* 0 leg))
+            (- final (* 1 leg))
+            (- final (* 2 leg))
+            (- final (* 3 leg))))))
 
 
 (defun truncate-number-left (n amount &optional (radix 10))
@@ -1000,16 +990,8 @@
   ;;
   ;; What is the sum of the numbers on the diagonals in a 1001 by 1001 spiral
   ;; formed in the same way?
-  (let* ((size 1001)
-         (spiral (number-spiral size)))
-    (+ (iterate (for x :from 0 :below size) ; \
-                (for y :from 0 :below size)
-                (summing (aref spiral y x)))
-       (iterate (for x :from (1- size) :downto 0) ; /
-                (for y :from 0 :below size)
-                (summing (aref spiral y x)))
-       ;; don't double-count the center...
-       (- (aref spiral (truncate size 2) (truncate size 2))))))
+  (iterate (for size :from 1 :to 1001 :by 2)
+           (summing (apply #'+ (number-spiral-corners size)))))
 
 (defun problem-29 ()
   ;; Consider all integer combinations of a^b for 2 ≤ a ≤ 5 and 2 ≤ b ≤ 5:
@@ -1730,6 +1712,40 @@
     (counting (> (digits-length (numerator expansion))
                  (digits-length (denominator expansion))))))
 
+(defun problem-58 ()
+  ;; Starting with 1 and spiralling anticlockwise in the following way, a square
+  ;; spiral with side length 7 is formed.
+  ;;
+  ;; 37 36 35 34 33 32 31
+  ;; 38 17 16 15 14 13 30
+  ;; 39 18  5  4  3 12 29
+  ;; 40 19  6  1  2 11 28
+  ;; 41 20  7  8  9 10 27
+  ;; 42 21 22 23 24 25 26
+  ;; 43 44 45 46 47 48 49
+  ;;
+  ;; It is interesting to note that the odd squares lie along the bottom right
+  ;; diagonal, but what is more interesting is that 8 out of the 13 numbers
+  ;; lying along both diagonals are prime; that is, a ratio of 8/13 ≈ 62%.
+  ;;
+  ;; If one complete new layer is wrapped around the spiral above, a square
+  ;; spiral with side length 9 will be formed. If this process is continued,
+  ;; what is the side length of the square spiral for which the ratio of primes
+  ;; along both diagonals first falls below 10%?
+  (labels ((score (value)
+             (if (primep value) 1 0))
+           (primes-in-layer (size)
+             (sum (number-spiral-corners size) :key #'score)))
+    (iterate
+      (for size :from 3 :by 2)
+      (for count :from 5 :by 4)
+      (sum (primes-in-layer size) :into primes)
+      (for ratio = (/ primes count))
+      (finding size :such-that (< ratio 1/10)))))
+
+
+
+
 
 (defun problem-74 ()
   ;; The number 145 is well known for the property that the sum of the factorial
@@ -1857,9 +1873,10 @@
 (test p55 (is (= 249 (problem-55))))
 (test p56 (is (= 972 (problem-56))))
 (test p57 (is (= 153 (problem-57))))
+(test p58 (is (= 26241 (problem-58))))
 
 (test p74 (is (= 402 (problem-74))))
 (test p145 (is (= 608720 (problem-145))))
 
 
-;; (run! :euler)
+(run! :euler)
