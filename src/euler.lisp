@@ -1601,6 +1601,49 @@
       (for nCr = (binomial-coefficient n r))
       (in main (counting (> nCr 1000000))))))
 
+(defun problem-54 ()
+  ;; In the card game poker, a hand consists of five cards and are ranked, from
+  ;; lowest to highest, in the following way:
+  ;;
+  ;; High Card: Highest value card.
+  ;; One Pair: Two cards of the same value.
+  ;; Two Pairs: Two different pairs.
+  ;; Three of a Kind: Three cards of the same value.
+  ;; Straight: All cards are consecutive values.
+  ;; Flush: All cards of the same suit.
+  ;; Full House: Three of a kind and a pair.
+  ;; Four of a Kind: Four cards of the same value.
+  ;; Straight Flush: All cards are consecutive values of same suit.
+  ;; Royal Flush: Ten, Jack, Queen, King, Ace, in same suit.
+  ;;
+  ;; The cards are valued in the order:
+  ;; 2, 3, 4, 5, 6, 7, 8, 9, 10, Jack, Queen, King, Ace.
+  ;;
+  ;; If two players have the same ranked hands then the rank made up of the
+  ;; highest value wins; for example, a pair of eights beats a pair of fives
+  ;; (see example 1 below). But if two ranks tie, for example, both players have
+  ;; a pair of queens, then highest cards in each hand are compared (see example
+  ;; 4 below); if the highest cards tie then the next highest cards are
+  ;; compared, and so on.
+  ;;
+  ;; The file, poker.txt, contains one-thousand random hands dealt to two
+  ;; players. Each line of the file contains ten cards (separated by a single
+  ;; space): the first five are Player 1's cards and the last five are Player
+  ;; 2's cards. You can assume that all hands are valid (no invalid characters
+  ;; or repeated cards), each player's hand is in no specific order, and in each
+  ;; hand there is a clear winner.
+  ;;
+  ;; How many hands does Player 1 win?
+  (iterate (for line :in-file "data/54-poker.txt" :using #'read-line)
+           (for cards = (mapcar #'euler.poker::parse-card
+                                (cl-strings:split line #\space)))
+           (for p1 = (take 5 cards))
+           (for p2 = (drop 5 cards))
+           (counting (euler.poker::poker-hand-beats-p p1 p2))))
+
+
+
+
 
 (defun problem-56 ()
   ;; A googol (10^100) is a massive number: one followed by one-hundred zeros;
@@ -1737,6 +1780,7 @@
 (test p51 (is (= 121313 (problem-51))))
 (test p52 (is (= 142857 (problem-52))))
 (test p53 (is (= 4075 (problem-53))))
+(test p54 (is (= 376 (problem-54))))
 
 (test p56 (is (= 972 (problem-56))))
 (test p74 (is (= 402 (problem-74))))

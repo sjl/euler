@@ -12,8 +12,10 @@
 
                :fiveam
                :iterate
-               :losh
                :local-time
+               :losh
+               :cl-strings
+               :anaphora
 
                )
 
@@ -25,5 +27,6 @@
                (:file "package")
                (:module "src" :serial t
                 :components ((:file "primes")
-                             (:file "euler")))))
+                             (:file "euler")
+                             (:file "poker")))))
 
