@@ -90,7 +90,7 @@
         :while (dividesp d factor)
         :finally (return (values e d))))
 
-(defun miller-rabin-prime-p (n &optional (k 10))
+(defun miller-rabin-prime-p (n &optional (k 11))
   "Return whether `n` might be prime.
 
   If `t` is returned, `n` is probably prime.

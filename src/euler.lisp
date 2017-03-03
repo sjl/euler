@@ -371,6 +371,21 @@
   (digits-to-number (nreverse (digits n))))
 
 
+(defmacro labels-memoized (definitions &body body)
+  (let ((caches (mapcar #'gensym (range 0 (length definitions)))))
+    (flet ((build (cache definition)
+             (destructuring-bind (name lambda-list &body body) definition
+               `(,name ,lambda-list
+                 (values
+                   (ensure-gethash (list ,@lambda-list) ,cache
+                                   (progn ,@body)))))))
+      `(let (,@(iterate (for cache :in caches)
+                        (collect `(,cache (make-hash-table :test #'equal)))))
+         (labels (,@(mapcar #'build caches definitions))
+           ,@body)))))
+
+
+
 ;;;; Problems -----------------------------------------------------------------
 (defun problem-1 ()
   ;; If we list all the natural numbers below 10 that are multiples of 3 or 5,
@@ -1806,6 +1821,7 @@
              (remove-if-not (curry #'hset-contains-p words) <>)
              length))
          (answer (keyword)
+           ;; (pr (stringify keyword)) ; keyword is "god", lol
            (sum (apply-cipher keyword))))
       (iterate (for-nested ((a :from (char-code #\a) :to (char-code #\z))
                             (b :from (char-code #\a) :to (char-code #\z))
@@ -1813,6 +1829,39 @@
                (for keyword = (list a b c))
                (finding (answer keyword) :maximizing (score-keyword keyword))))))
 
+(defun problem-60 ()
+  ;; The primes 3, 7, 109, and 673, are quite remarkable. By taking any two
+  ;; primes and concatenating them in any order the result will always be prime.
+  ;; For example, taking 7 and 109, both 7109 and 1097 are prime. The sum of
+  ;; these four primes, 792, represents the lowest sum for a set of four primes
+  ;; with this property.
+  ;;
+  ;; Find the lowest sum for a set of five primes for which any two primes
+  ;; concatenate to produce another prime.
+  (labels-memoized ((concatenates-prime-p (a b)
+                      (and (primep (concatenate-integers a b))
+                           (primep (concatenate-integers b a)))))
+    (flet ((satisfiesp (prime primes)
+             (every (curry #'concatenates-prime-p prime) primes)))
+      (iterate
+        main
+        ;; 2 can never be part of the winning set, because if you concatenate it
+        ;; in the last position you get an even number.
+        (with primes = (subseq (sieve 10000) 1))
+        (for a :in-vector primes :with-index ai)
+        (iterate
+          (for b :in-vector primes :with-index bi :from (1+ ai))
+          (when (satisfiesp b (list a))
+            (iterate
+              (for c :in-vector primes :with-index ci :from (1+ bi))
+              (when (satisfiesp c (list a b))
+                (iterate
+                  (for d :in-vector primes :with-index di :from (1+ ci))
+                  (when (satisfiesp d (list a b c))
+                    (iterate
+                      (for e :in-vector primes :from (1+ di))
+                      (when (satisfiesp e (list a b c d))
+                        (in main (return-from problem-60 (+ a b c d e)))))))))))))))
 
 
 (defun problem-74 ()
@@ -1943,9 +1992,10 @@
 (test p57 (is (= 153 (problem-57))))
 (test p58 (is (= 26241 (problem-58))))
 (test p59 (is (= 107359 (problem-59))))
+(test p60 (is (= 26033 (problem-60))))
 
 (test p74 (is (= 402 (problem-74))))
 (test p145 (is (= 608720 (problem-145))))
 
 
-(run! :euler)
+;; (run! :euler)

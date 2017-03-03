@@ -8,6 +8,7 @@
                :curry
                :define-constant
                :ensure-boolean
+               :ensure-gethash
                :equivalence-classes
                :map-combinations
                :map-permutations
