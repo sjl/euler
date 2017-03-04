@@ -10,18 +10,17 @@
 
   :depends-on (
 
+               :anaphora
+               :cl-strings
                :fiveam
                :iterate
                :local-time
                :losh
-               :cl-strings
-               :anaphora
 
                )
 
   :serial t
-  :components (
-               (:module "vendor" :serial t
+  :components ((:module "vendor" :serial t
                 :components ((:file "quickutils-package")
                              (:file "quickutils")))
                (:file "package")
