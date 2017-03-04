@@ -2028,6 +2028,26 @@
                 ((> score target) (removef candidates first)))) ; tricksy hobbitses
         (thereis (apply (nullary #'min) candidates))))))
 
+(defun problem-63 ()
+  ;; The 5-digit number, 16807=7^5, is also a fifth power. Similarly, the
+  ;; 9-digit number, 134217728=8^9, is a ninth power.
+  ;;
+  ;; How many n-digit positive integers exist which are also an nth power?
+  (flet ((score (n)
+           ;; 10^n will have n+1 digits, so we never need to check beyond that
+           (iterate (for base :from 1 :below 10)
+                    (for value = (expt base n))
+                    (counting (= n (digits-length value)))))
+         (find-bound ()
+           ;; it's 21.something, but I don't really grok why yet
+           (iterate
+             (for power :from 1)
+             (for maximum-possible-digits = (digits-length (expt 9 power)))
+             (while (>= maximum-possible-digits power))
+             (finally (return power)))))
+    (iterate (for n :from 1 :below (find-bound))
+             (sum (score n)))))
+
 
 (defun problem-74 ()
   ;; The number 145 is well known for the property that the sum of the factorial
@@ -2160,6 +2180,7 @@
 (test p60 (is (= 26033 (problem-60))))
 (test p61 (is (= 28684 (problem-61))))
 (test p62 (is (= 127035954683 (problem-62))))
+(test p63 (is (= 49 (problem-63))))
 
 
 (test p74 (is (= 402 (problem-74))))
