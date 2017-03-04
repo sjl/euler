@@ -18,6 +18,7 @@
                :range
                :rcurry
                :read-file-into-string
+               :removef
                :switch
                :with-gensyms
 

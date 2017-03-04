@@ -1,7 +1,7 @@
 (in-package :euler)
 
 ;;;; Utils --------------------------------------------------------------------
-(defmacro-driver (FOR var ITERATING function INITIALLY value)
+(defmacro-driver (FOR var ITERATING function SEED value)
   (let ((kwd (if generate 'generate 'for)))
     (with-gensyms (f)
       `(progn
@@ -102,19 +102,22 @@
 
 (defun divisors (n)
   (sort< (iterate (for i :from 1 :to (sqrt n))
-                 (when (dividesp n i)
-                   (collect i)
-                   (let ((j (/ n i)))
-                     ;; don't collect the square root twice
-                     (unless (= i j)
-                       (collect j)))))))
+                  (when (dividesp n i)
+                    (collect i)
+                    (let ((j (/ n i)))
+                      ;; don't collect the square root twice
+                      (unless (= i j)
+                        (collect j)))))))
 
 (defun proper-divisors (n)
   (remove n (divisors n)))
 
 (defun count-divisors (n)
-  (* 2 (iterate (for i :from 1 :to (sqrt n))
-                (counting (dividesp n i)))))
+  (+ (* 2 (iterate (for i :from 1 :below (sqrt n))
+                   (counting (dividesp n i))))
+     (if (squarep n)
+       1
+       0)))
 
 
 (defmacro-driver (FOR var IN-COLLATZ n)
@@ -156,8 +159,8 @@
   "Return `n` choose `k`."
   ;; https://en.wikipedia.org/wiki/Binomial_coefficient#Multiplicative_formula
   (iterate (for i :from 1 :to k)
-           (multiply (/ (+ n 1 (- i))
-                        i))))
+           (multiplying (/ (+ n 1 (- i))
+                           i))))
 
 
 (defun factorial (n)
@@ -499,10 +502,9 @@
     ;; anything divisible by 16 is automatically divisible by 8
     ;; anything divisible by 18 is automatically divisible by 9
     ;; anything divisible by 20 is automatically divisible by 10
-    (with divisors = (irange 11 20))
+    (with divisors = (range 11 20))
     (for i :from 20 :by 20) ; it must be divisible by 20
-    (finding i :such-that (every (lambda (n) (dividesp i n))
-                                 divisors))))
+    (finding i :such-that (every (curry #'dividesp i) divisors))))
 
 (defun problem-6 ()
   ;; The sum of the squares of the first ten natural numbers is,
@@ -1744,7 +1746,7 @@
            (lychrelp (n)
              (iterate
                (repeat 50)
-               (for i :iterating #'lychrel :initially n)
+               (for i :iterating #'lychrel :seed n)
                (never (palindromep i)))))
     (iterate (for i :from 0 :below 10000)
              (counting (lychrelp i)))))
@@ -1996,16 +1998,35 @@
   ;; Find the smallest cube for which exactly five permutations of its digits
   ;; are cube.
   (let ((scores (make-hash-table))) ; canonical-repr => (count . first-cube)
-    ;; Strategy from http://www.mathblog.dk/project-euler-62-cube-five-permutations/
+    ;; Basic strategy from [1] but with some bug fixes.  His strategy happens to
+    ;; work for this specific case, but could be incorrect for others.
+    ;;
+    ;; We can't just return as soon as we hit the 5th cubic permutation, because
+    ;; what if this cube is actually part of a family of 6?  Instead we need to
+    ;; check all other cubes with the same number of digits before making a
+    ;; final decision to be sure we don't get fooled.
+    ;;
+    ;; [1]: http://www.mathblog.dk/project-euler-62-cube-five-permutations/
     (labels ((canonicalize (cube)
                (digits-to-number (sort (digits cube) #'>)))
              (mark (cube)
-               (incf (car (ensure-gethash (canonicalize cube) scores
-                                          (cons 0 cube))))))
+               (let ((entry (ensure-gethash (canonicalize cube) scores
+                                            (cons 0 cube))))
+                 (incf (car entry))
+                 entry)))
       (iterate
-        (for cube :key #'cube :from 1)
-        (finding (cdr (gethash (canonicalize cube) scores))
-                 :such-that (= 5 (mark cube)))))))
+        (with i = 1)
+        (with target = 5)
+        (with candidates = nil)
+        (for limit :initially 10 :then (* 10 limit))
+        (iterate
+          (for cube = (cube i))
+          (while (< cube limit))
+          (incf i)
+          (for (score . first) = (mark cube))
+          (cond ((= score target) (push first candidates))
+                ((> score target) (removef candidates first)))) ; tricksy hobbitses
+        (thereis (apply (nullary #'min) candidates))))))
 
 
 (defun problem-74 ()

@@ -2,7 +2,7 @@
 ;;;; See http://quickutil.org for details.
 
 ;;;; To regenerate:
-;;;; (qtlc:save-utils-as "quickutils.lisp" :utilities '(:COMPOSE :CURRY :DEFINE-CONSTANT :ENSURE-BOOLEAN :ENSURE-GETHASH :EQUIVALENCE-CLASSES :MAP-COMBINATIONS :MAP-PERMUTATIONS :MAXF :MINF :N-GRAMS :RANGE :RCURRY :READ-FILE-INTO-STRING :SWITCH :WITH-GENSYMS) :ensure-package T :package "EULER.QUICKUTILS")
+;;;; (qtlc:save-utils-as "quickutils.lisp" :utilities '(:COMPOSE :CURRY :DEFINE-CONSTANT :ENSURE-BOOLEAN :ENSURE-GETHASH :EQUIVALENCE-CLASSES :MAP-COMBINATIONS :MAP-PERMUTATIONS :MAXF :MINF :N-GRAMS :RANGE :RCURRY :READ-FILE-INTO-STRING :REMOVEF :SWITCH :WITH-GENSYMS) :ensure-package T :package "EULER.QUICKUTILS")
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (unless (find-package "EULER.QUICKUTILS")
@@ -20,7 +20,7 @@
                                          :MAP-PERMUTATIONS :MAXF :MINF :TAKE
                                          :N-GRAMS :RANGE :RCURRY :ONCE-ONLY
                                          :WITH-OPEN-FILE* :WITH-INPUT-FROM-FILE
-                                         :READ-FILE-INTO-STRING
+                                         :READ-FILE-INTO-STRING :REMOVEF
                                          :STRING-DESIGNATOR :WITH-GENSYMS
                                          :EXTRACT-FUNCTION-NAME :SWITCH))))
 (eval-when (:compile-toplevel :load-toplevel :execute)
@@ -407,6 +407,16 @@ unless it's `nil`, which means the system default."
               :while (= bytes-read buffer-size)))))))
   
 
+  (declaim (inline remove/swapped-arguments))
+  (defun remove/swapped-arguments (sequence item &rest keyword-arguments)
+    (apply #'remove item sequence keyword-arguments))
+
+  (define-modify-macro removef (item &rest remove-keywords)
+    remove/swapped-arguments
+    "Modify-macro for `remove`. Sets place designated by the first argument to
+the result of calling `remove` with `item`, place, and the `keyword-arguments`.")
+  
+
   (deftype string-designator ()
     "A string designator type. A string designator is either a string, a symbol,
 or a character."
@@ -503,7 +513,7 @@ returns the values of `default` if no keys match."
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (export '(compose curry define-constant ensure-boolean ensure-gethash
             equivalence-classes map-combinations map-permutations maxf minf
-            n-grams range rcurry read-file-into-string switch eswitch cswitch
-            with-gensyms with-unique-names)))
+            n-grams range rcurry read-file-into-string removef switch eswitch
+            cswitch with-gensyms with-unique-names)))
 
 ;;;; END OF quickutils.lisp ;;;;
