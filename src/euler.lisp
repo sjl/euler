@@ -22,6 +22,14 @@
                     ,l
                     ,remaining)))))))
 
+(defmacro-driver (FOR var KEY function &sequence)
+  (let ((kwd (if generate 'generate 'for)))
+    (with-gensyms (i f)
+      `(progn
+         (with ,f = ,function)
+         (generate ,i ,@(losh::expand-iterate-sequence-keywords))
+         (,kwd ,var :next (funcall ,f (next ,i)))))))
+
 
 (defmacro-driver (FOR var IN-DIGITS-OF integer &optional RADIX (radix 10))
   "Iterate `var` through the digits of `integer` in base `radix`, low-order first."
@@ -54,6 +62,18 @@
     (reduce (lambda (total digit)
               (+ (* total 10) digit))
             digits)
+    0))
+
+(defun extremely-fucking-unsafe-digits-to-number (digits)
+  (declare (optimize (speed 3) (safety 0)))
+  (if digits
+    (iterate
+      (declare (iterate:declare-variables))
+      (with (the (unsigned-byte 62) result) = 0)
+      (for (the (integer 0 9) d) :in digits)
+      (setf result (the (unsigned-byte 64) (mod (* result 10) (expt 2 62)))
+            result (the (unsigned-byte 64) (mod (+ result d) (expt 2 62))))
+      (finally (return result)))
     0))
 
 
@@ -306,6 +326,32 @@
        (= n (square (isqrt n)))))
 
 
+(defun cube (n)
+  (* n n n))
+
+
+(eval-dammit
+  (defun build-cube-array ()
+    ;; http://stackoverflow.com/a/32017647
+    (iterate
+      (with arr = (make-array 819 :initial-element nil))
+      (for mod in '(0  125  181  818  720  811  532  755  476
+                     1  216   90  307  377  694  350  567  442
+                     8  343  559  629  658  351  190   91  469
+                     27  512  287  252  638  118  603  161  441
+                     64  729   99  701  792  378  260  468  728))
+      (setf (aref arr mod) t)
+      (finally (return arr)))))
+
+(defun slow-cubep (n)
+  (= n (cube (truncate (expt n 1/3)))))
+
+(defun cubep (n)
+  (and (integerp n)
+       (svref #.(build-cube-array) (mod n 819))
+       (slow-cubep n)))
+
+
 (defun triangle (n)
   "Return the `n`th triangle number (1-indexed because mathematicians are silly)."
   (* 1/2 n (1+ n)))
@@ -412,13 +458,10 @@
   ;;
   ;; By considering the terms in the Fibonacci sequence whose values do not
   ;; exceed four million, find the sum of the even-valued terms.
-  (iterate (with a = 0)
-           (with b = 1)
-           (while (<= b 4000000))
-           (when (evenp b)
-             (sum b))
-           (psetf a b
-                  b (+ a b))))
+  (iterate (for n :in-fibonacci t)
+           (while (<= n 4000000))
+           (when (evenp n)
+             (sum n))))
 
 (defun problem-3 ()
   ;; The prime factors of 13195 are 5, 7, 13 and 29.
@@ -595,9 +638,9 @@
   ;;
   ;; What is the value of the first triangle number to have over five hundred
   ;; divisors?
-  (iterate (for n :from 1)
-           (for tri :first n :then (+ tri n))
-           (finding tri :such-that (> (count-divisors tri) 500))))
+  (iterate
+    (for tri :key #'triangle :from 1)
+    (finding tri :such-that (> (count-divisors tri) 500))))
 
 (defun problem-13 ()
   ;; Work out the first ten digits of the sum of the following one-hundred
@@ -726,7 +769,6 @@
   ;; Which starting number, under one million, produces the longest chain?
   ;;
   ;; NOTE: Once the chain starts the terms are allowed to go above one million.
-
   (iterate (for i :from 1 :below 1000000)
            (finding i :maximizing #'collatz-length)))
 
@@ -1299,8 +1341,8 @@
   (iterate
     top
     (with index = 0)
-    (for i :from 1)
-    (iterate (for d :in (digits i))
+    (for digits :key #'digits :from 1)
+    (iterate (for d :in digits)
              (incf index)
              (when (member index '(1 10 100 1000 10000 100000 1000000))
                (in top (multiplying d))
@@ -1424,8 +1466,7 @@
   ;;
   ;; Find the next triangle number that is also pentagonal and hexagonal.
   (iterate
-    (for i :from 286)
-    (for n = (triangle i))
+    (for n :key #'triangle :from 286)
     (finding n :such-that (and (pentagonp n) (hexagonp n)))))
 
 (defun problem-46 ()
@@ -1549,8 +1590,8 @@
                        winner sum))
                (finally (return (values score winner))))))
       (iterate
-        (for i :from 0 :below (length primes))
-        (for (values score winner) = (score i))
+        (for (values score winner)
+             :key #'score :from 0 :below (length primes))
         (finding winner :maximizing score)))))
 
 (defun problem-51 ()
@@ -1623,7 +1664,6 @@
   ;;
   ;; How many, not necessarily distinct, values of nCr, for 1 ≤ n ≤ 100, are
   ;; greater than one-million?
-
   (iterate
     main
     (for n :from 1 :to 100)
@@ -1948,7 +1988,24 @@
                             (numbers #'heptagon)
                             (numbers #'octagon)))))
 
-
+(defun problem-62 ()
+  ;; The cube, 41063625 (345³), can be permuted to produce two other cubes:
+  ;; 56623104 (384³) and 66430125 (405³). In fact, 41063625 is the smallest cube
+  ;; which has exactly three permutations of its digits which are also cube.
+  ;;
+  ;; Find the smallest cube for which exactly five permutations of its digits
+  ;; are cube.
+  (let ((scores (make-hash-table))) ; canonical-repr => (count . first-cube)
+    ;; Strategy from http://www.mathblog.dk/project-euler-62-cube-five-permutations/
+    (labels ((canonicalize (cube)
+               (digits-to-number (sort (digits cube) #'>)))
+             (mark (cube)
+               (incf (car (ensure-gethash (canonicalize cube) scores
+                                          (cons 0 cube))))))
+      (iterate
+        (for cube :key #'cube :from 1)
+        (finding (cdr (gethash (canonicalize cube) scores))
+                 :such-that (= 5 (mark cube)))))))
 
 
 (defun problem-74 ()
@@ -2081,6 +2138,7 @@
 (test p59 (is (= 107359 (problem-59))))
 (test p60 (is (= 26033 (problem-60))))
 (test p61 (is (= 28684 (problem-61))))
+(test p62 (is (= 127035954683 (problem-62))))
 
 
 (test p74 (is (= 402 (problem-74))))
