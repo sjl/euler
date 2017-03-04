@@ -9,3 +9,4 @@ syntax: glob
 tags
 scratch.lisp
 scratch.lisp
+lisp.prof
