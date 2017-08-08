@@ -1,4 +1,4 @@
-(asdf:defsystem #:euler
+(asdf:defsystem :euler
   :name "euler"
   :description "Project Euler solutions."
 
@@ -26,6 +26,7 @@
                (:file "package")
                (:module "src" :serial t
                 :components ((:file "primes")
+                             (:file "utils")
                              (:file "euler")
                              (:file "poker")))))
 

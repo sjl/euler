@@ -2,7 +2,7 @@
 ;;;; See http://quickutil.org for details.
 
 ;;;; To regenerate:
-;;;; (qtlc:save-utils-as "quickutils.lisp" :utilities '(:COMPOSE :CURRY :DEFINE-CONSTANT :ENSURE-BOOLEAN :ENSURE-GETHASH :EQUIVALENCE-CLASSES :MAP-COMBINATIONS :MAP-PERMUTATIONS :MAXF :MINF :N-GRAMS :RANGE :RCURRY :READ-FILE-INTO-STRING :REMOVEF :SWITCH :WITH-GENSYMS) :ensure-package T :package "EULER.QUICKUTILS")
+;;;; (qtlc:save-utils-as "quickutils.lisp" :utilities '(:COMPOSE :CURRY :DEFINE-CONSTANT :EMPTYP :ENSURE-BOOLEAN :ENSURE-GETHASH :EQUIVALENCE-CLASSES :MAP-COMBINATIONS :MAP-PERMUTATIONS :MAXF :MINF :N-GRAMS :RANGE :RCURRY :READ-FILE-INTO-STRING :REMOVEF :SWITCH :WITH-GENSYMS) :ensure-package T :package "EULER.QUICKUTILS")
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (unless (find-package "EULER.QUICKUTILS")
@@ -15,11 +15,12 @@
 (when (boundp '*utilities*)
   (setf *utilities* (union *utilities* '(:MAKE-GENSYM-LIST :ENSURE-FUNCTION
                                          :COMPOSE :CURRY :DEFINE-CONSTANT
-                                         :ENSURE-BOOLEAN :ENSURE-GETHASH
-                                         :EQUIVALENCE-CLASSES :MAP-COMBINATIONS
-                                         :MAP-PERMUTATIONS :MAXF :MINF :TAKE
-                                         :N-GRAMS :RANGE :RCURRY :ONCE-ONLY
-                                         :WITH-OPEN-FILE* :WITH-INPUT-FROM-FILE
+                                         :NON-ZERO-P :EMPTYP :ENSURE-BOOLEAN
+                                         :ENSURE-GETHASH :EQUIVALENCE-CLASSES
+                                         :MAP-COMBINATIONS :MAP-PERMUTATIONS
+                                         :MAXF :MINF :TAKE :N-GRAMS :RANGE
+                                         :RCURRY :ONCE-ONLY :WITH-OPEN-FILE*
+                                         :WITH-INPUT-FROM-FILE
                                          :READ-FILE-INTO-STRING :REMOVEF
                                          :STRING-DESIGNATOR :WITH-GENSYMS
                                          :EXTRACT-FUNCTION-NAME :SWITCH))))
@@ -131,6 +132,20 @@ Signals an error if `name` is already a constant variable whose value is not
 equal under `test` to result of evaluating `initial-value`."
     `(defconstant ,name (%reevaluate-constant ',name ,initial-value ,test)
        ,@(when documentation `(,documentation))))
+  
+
+  (defun non-zero-p (n)
+    "Check if `n` is non-zero."
+    (not (zerop n)))
+  
+
+  (defgeneric emptyp (object)
+    (:documentation "Determine if `object` is empty.")
+    (:method ((x null)) t)
+    (:method ((x cons)) nil)
+    (:method ((x vector)) (zerop (length x))) ; STRING :< VECTOR
+    (:method ((x array)) (notany #'non-zero-p (array-dimensions x)))
+    (:method ((x hash-table)) (zerop (hash-table-count x))))
   
 
   (defun ensure-boolean (x)
@@ -511,7 +526,7 @@ returns the values of `default` if no keys match."
     (generate-switch-body whole object clauses test key '(cerror "Return NIL from CSWITCH.")))
   
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (export '(compose curry define-constant ensure-boolean ensure-gethash
+  (export '(compose curry define-constant emptyp ensure-boolean ensure-gethash
             equivalence-classes map-combinations map-permutations maxf minf
             n-grams range rcurry read-file-into-string removef switch eswitch
             cswitch with-gensyms with-unique-names)))

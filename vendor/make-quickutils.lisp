@@ -7,6 +7,7 @@
                :compose
                :curry
                :define-constant
+               :emptyp
                :ensure-boolean
                :ensure-gethash
                :equivalence-classes
