@@ -1665,6 +1665,28 @@
                       (every (rcurry #'subsequencep (digits passcode))
                              attempts)))))
 
+(defun problem-92 ()
+  ;; A number chain is created by continuously adding the square of the digits
+  ;; in a number to form a new number until it has been seen before.
+  ;;
+  ;; For example,
+  ;; 44 → 32 → 13 → 10 → 1 → 1
+  ;; 85 → 89 → 145 → 42 → 20 → 4 → 16 → 37 → 58 → 89
+  ;;
+  ;; Therefore any chain that arrives at 1 or 89 will become stuck in an
+  ;; endless loop. What is most amazing is that EVERY starting number will
+  ;; eventually arrive at 1 or 89.
+  ;;
+  ;; How many starting numbers below ten million will arrive at 89?
+  (labels ((square-chain-end (i)
+             (if (or (= 1 i) (= 89 i))
+               i
+               (square-chain-end
+                 (iterate (for d :in-digits-of i)
+                          (summing (square d)))))))
+    (iterate (for i :from 1 :below 10000000)
+             (counting (= 89 (square-chain-end i))))))
+
 (defun problem-145 ()
   ;; Some positive integers n have the property that the sum [ n + reverse(n) ]
   ;; consists entirely of odd (decimal) digits. For instance, 36 + 63 = 99 and
@@ -1764,6 +1786,7 @@
 
 (test p74 (is (= 402 (problem-74))))
 (test p79 (is (= 73162890 (problem-79))))
+(test p92 (is (= 8581146 (problem-92))))
 (test p145 (is (= 608720 (problem-145))))
 
 

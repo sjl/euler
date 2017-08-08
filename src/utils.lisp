@@ -44,21 +44,16 @@
                               (setf ,i ,remaining)
                               ,digit)))))))
 
-(defun digits (n &optional (radix 10))
-  "Return a fresh list of the digits of `n` in base `radix`."
-  (iterate (for d :in-digits-of n :radix radix)
-           (collect d :at :beginning)))
-
-(defun digits-vector (n &optional (radix 10))
-  "Return a fresh vector of the digits of `n` in base `radix`."
-  (iterate (for d :in-digits-of n :radix radix)
-           (collect d :at :beginning :result-type 'vector)))
-
 (defun digits-length (n &optional (radix 10))
   "Return how many digits `n` has in base `radix`."
   (if (zerop n)
     1
     (values (1+ (truncate (log (abs n) radix))))))
+
+(defun digits (n &optional (radix 10))
+  "Return a fresh list of the digits of `n` in base `radix`."
+  (iterate (for d :in-digits-of n :radix radix)
+           (collect d :at :beginning)))
 
 
 (defun digits-to-number (digits)
@@ -87,17 +82,30 @@
     (string= s (reverse s))))
 
 
-(defun sum (sequence &key key)
+(defun-inlineable sum (sequence &key key)
   (iterate (for n :in-whatever sequence)
            (sum (if key
                   (funcall key n)
                   n))))
 
-(defun product (sequence &key key)
+(defun-inlineable product (sequence &key key)
   (iterate (for n :in-whatever sequence)
            (multiplying (if key
                           (funcall key n)
                           n))))
+
+
+(defun-inlineable mutate (function list)
+  "Destructively mutate each element of `list` in-place with `function`.
+
+  Equivalent to (but can be faster than) `(map-into list function list)`.
+
+  "
+  (declare (optimize speed))
+  (loop :with function = (ensure-function function)
+        :for l :on list
+        :do (setf (car l) (funcall function (car l))))
+  list)
 
 
 (defun sort< (sequence)

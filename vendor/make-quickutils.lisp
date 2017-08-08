@@ -9,6 +9,7 @@
                :define-constant
                :emptyp
                :ensure-boolean
+               :ensure-function
                :ensure-gethash
                :equivalence-classes
                :map-combinations

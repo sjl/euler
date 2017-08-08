@@ -2,7 +2,7 @@
 ;;;; See http://quickutil.org for details.
 
 ;;;; To regenerate:
-;;;; (qtlc:save-utils-as "quickutils.lisp" :utilities '(:COMPOSE :CURRY :DEFINE-CONSTANT :EMPTYP :ENSURE-BOOLEAN :ENSURE-GETHASH :EQUIVALENCE-CLASSES :MAP-COMBINATIONS :MAP-PERMUTATIONS :MAXF :MINF :N-GRAMS :RANGE :RCURRY :READ-FILE-INTO-STRING :REMOVEF :SWITCH :WITH-GENSYMS) :ensure-package T :package "EULER.QUICKUTILS")
+;;;; (qtlc:save-utils-as "quickutils.lisp" :utilities '(:COMPOSE :CURRY :DEFINE-CONSTANT :EMPTYP :ENSURE-BOOLEAN :ENSURE-FUNCTION :ENSURE-GETHASH :EQUIVALENCE-CLASSES :MAP-COMBINATIONS :MAP-PERMUTATIONS :MAXF :MINF :N-GRAMS :RANGE :RCURRY :READ-FILE-INTO-STRING :REMOVEF :SWITCH :WITH-GENSYMS) :ensure-package T :package "EULER.QUICKUTILS")
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (unless (find-package "EULER.QUICKUTILS")
@@ -526,9 +526,10 @@ returns the values of `default` if no keys match."
     (generate-switch-body whole object clauses test key '(cerror "Return NIL from CSWITCH.")))
   
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (export '(compose curry define-constant emptyp ensure-boolean ensure-gethash
-            equivalence-classes map-combinations map-permutations maxf minf
-            n-grams range rcurry read-file-into-string removef switch eswitch
-            cswitch with-gensyms with-unique-names)))
+  (export '(compose curry define-constant emptyp ensure-boolean ensure-function
+            ensure-gethash equivalence-classes map-combinations
+            map-permutations maxf minf n-grams range rcurry
+            read-file-into-string removef switch eswitch cswitch with-gensyms
+            with-unique-names)))
 
 ;;;; END OF quickutils.lisp ;;;;
