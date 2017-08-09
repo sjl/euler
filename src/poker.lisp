@@ -23,11 +23,6 @@
 
 
 ;;;; Utils --------------------------------------------------------------------
-(defun emptyp (sequence)
-  (if (listp sequence)
-    (null sequence)
-    (= 0 (length sequence))))
-
 (defun all-equal (sequence &key (test #'eql))
   (or (emptyp sequence)
       (not (find (elt sequence 0) sequence :start 1 :test-not test))))

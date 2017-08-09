@@ -235,11 +235,6 @@
   (truncate n (expt radix amount)))
 
 
-(defun hex (n)
-  (format t "~X" n)
-  (values))
-
-
 (defun concatenate-integers (&rest integers)
   "Concatenate each integer in `integers` and return a big ol' integer result."
   (values (parse-integer
