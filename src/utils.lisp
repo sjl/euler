@@ -112,14 +112,22 @@
   (sort sequence #'<))
 
 
+(defun unsorted-divisors (n)
+  (iterate (for i :from 1 :to (sqrt n))
+           (for (values divisor remainder) = (truncate n i))
+           (when (zerop remainder)
+             (collect i)
+             ;; don't collect the square root twice
+             (unless (= i divisor)
+               (collect divisor)))))
+
+(defun-inlineable divisors-up-to-square-root (n)
+  (loop :for i :from 1 :to (floor (sqrt n))
+        :when (zerop (rem n i))
+        :collect i))
+
 (defun divisors (n)
-  (sort< (iterate (for i :from 1 :to (sqrt n))
-                  (when (dividesp n i)
-                    (collect i)
-                    (let ((j (/ n i)))
-                      ;; don't collect the square root twice
-                      (unless (= i j)
-                        (collect j)))))))
+  (sort< (unsorted-divisors n)))
 
 (defun proper-divisors (n)
   (remove n (divisors n)))

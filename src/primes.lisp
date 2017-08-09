@@ -1,5 +1,32 @@
 (in-package :euler)
 
+(declaim (ftype (function ((integer 0 #.array-dimension-limit))
+                          (simple-array bit (*)))
+                sieve%))
+
+(eval-dammit
+  (defun sieve% (limit)
+    "Return a bit vector of primality for all numbers below `limit`."
+    (iterate
+      (with numbers = (make-array limit :initial-element 1 :element-type 'bit))
+      (for bit :in-vector numbers :with-index n :from 2)
+      (when (= 1 bit)
+        (iterate (for composite :from (* 2 n) :by n :below limit)
+                 (setf (aref numbers composite) 0)))
+      (finally
+        (setf (aref numbers 0) 0
+              (aref numbers 1) 0)
+        (return numbers)))))
+
+(defun sieve (limit)
+  "Return a vector of all primes below `limit`."
+  (declare (optimize speed))
+  (iterate (declare (iterate:declare-variables))
+           (for bit :in-vector (sieve% limit) :with-index n :from 2)
+           (when (= 1 bit)
+             (collect n :result-type vector))))
+
+
 (defun prime-factorization (n)
   "Return the prime factors of `n`."
   ;; from http://www.geeksforgeeks.org/print-all-prime-factors-of-a-given-number/
@@ -106,6 +133,29 @@
                 (finally (return t))))))
 
 
+;;;; Precomputation -----------------------------------------------------------
+;;; We precompute a bit vector of the primality of the first hundred million
+;;; numbers to make checking primes faster.  It'll take up about 12 mb of memory
+;;; and take a few seconds to compute, but saves a lot of brute forcing later.
+
+(defconstant +precomputed-primality-limit+ 100000000)
+
+(defparameter *precomputed-primality-bit-vector*
+  (sieve% +precomputed-primality-limit+))
+
+(deftype precomputed-primality-bit-vector ()
+  `(simple-array bit (,+precomputed-primality-limit+)))
+
+(deftype integer-with-precomputed-primality ()
+  `(integer 0 (,+precomputed-primality-limit+)))
+
+(defun-inline precomputed-prime-p% (n)
+  (declare (optimize speed (debug 0) (safety 1))
+           (type integer-with-precomputed-primality n)
+           (type precomputed-primality-bit-vector *precomputed-primality-bit-vector*))
+  (not (zerop (aref *precomputed-primality-bit-vector* n))))
+
+
 (defun primep (n)
   "Return (less slowly) whether `n` is prime."
   (cond
@@ -113,7 +163,7 @@
     ((< n 2) nil)
     ((= n 2) t)
     ((evenp n) nil)
-    ((< n 100000) (brute-force-prime-p n))
+    ((< n +precomputed-primality-limit+) (precomputed-prime-p% n))
     (t (miller-rabin-prime-p n))))
 
 (defun unitp (n)
@@ -155,19 +205,6 @@
 (defun primes-between (min max)
   "Return the prime numbers `p` such that `min` < `p` < `max`."
   (primes% (1+ min) max))
-
-
-(defun sieve (limit)
-  "Return a vector of all primes below `limit`."
-  (check-type limit (integer 0 #.array-dimension-limit))
-  (iterate
-    (with numbers = (make-array limit :initial-element 1 :element-type 'bit))
-    (for bit :in-vector numbers :with-index n :from 2)
-    (when (= 1 bit)
-      (collect n :result-type vector)
-      (iterate (for composite :from (* 2 n) :by n)
-               (while (< composite limit))
-               (setf (aref numbers composite) 0)))))
 
 
 (defun nth-prime (n)

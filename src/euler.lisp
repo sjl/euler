@@ -1714,6 +1714,71 @@
         (when reversible
           (sum (if (= i j) 1 2)))))))
 
+(defun problem-357 ()
+  ;; Consider the divisors of 30: 1,2,3,5,6,10,15,30.  It can be seen that for
+  ;; every divisor d of 30, d+30/d is prime.
+  ;;
+  ;; Find the sum of all positive integers n not exceeding 100 000 000 such that
+  ;; for every divisor d of n, d+n/d is prime.
+  (labels ((check-divisor (n d)
+             (primep (+ d (truncate n d))))
+           (prime-generating-integer-p (n)
+             (declare (optimize speed)
+                      (type fixnum n)
+                      (inline divisors-up-to-square-root))
+             (every (curry #'check-divisor n)
+                    (divisors-up-to-square-root n))))
+    ;; Observations about the candidate numbers, from various places around the
+    ;; web, with my notes for humans:
+    ;;
+    ;; * n+1 must be prime.
+    ;;
+    ;;   Every number has 1 has a factor, which means one of
+    ;;   the tests will be to see if 1+(n/1) is prime.
+    ;;
+    ;; * n must be even (except the edge case of 1).
+    ;;
+    ;;   We know this because n+1 must be prime, and therefore odd, so n itself
+    ;;   must be even.
+    ;;
+    ;; * 2+(n/2) must be prime.
+    ;;
+    ;;   Because all candidates are even, they all have 2 as a divisor (see
+    ;;   above), and so we can do this check before finding all the divisors.
+    ;;
+    ;; * n must be squarefree.
+    ;;
+    ;;   Consider when n is squareful: then there is some prime that occurs more
+    ;;   than once in its factorization.  Choosing this prime as the divisor for
+    ;;   the formula gives us d+(n/d).  We know that n/d will still be divisible
+    ;;   by d, because we chose a d that occurs multiple times in the
+    ;;   factorization.  Obviously d itself is divisible by d.  Thus our entire
+    ;;   formula is divisible by d, and so not prime.
+    ;;
+    ;;   Unfortunately this doesn't really help us much, because there's no
+    ;;   efficient way to tell if a number is squarefree (see
+    ;;   http://mathworld.wolfram.com/Squarefree.html).
+    ;;
+    ;; * We only have to check d <= sqrt(n).
+    ;;
+    ;;   For each divisor d of n we know there's a twin divisor d' such that
+    ;;   d * d' = n (that's what it MEANS for d to be a divisor of n).
+    ;;
+    ;;   If we plug d into the formula we have d + n/d.
+    ;;   We know that n/d = d', and so we have d + d'.
+    ;;
+    ;;   If we plug d' into the formula we have d' + n/d'.
+    ;;   We know that n/d' = d, and so we have d' + d.
+    ;;
+    ;;   This means that plugging d or d' into the formula both result in the
+    ;;   same number, so we only need to bother checking one of them.
+    (1+ (iterate
+          ;; edge case: skip 2 (candidiate 1), we'll add it at the end
+          (for prime :in-vector (sieve (1+ 100000000)) :from 1)
+          (for candidate = (1- prime))
+          (when (and (check-divisor candidate 2)
+                     (prime-generating-integer-p candidate))
+            (summing candidate))))))
 
 ;;;; Tests --------------------------------------------------------------------
 (def-suite :euler)
@@ -1788,6 +1853,8 @@
 (test p79 (is (= 73162890 (problem-79))))
 (test p92 (is (= 8581146 (problem-92))))
 (test p145 (is (= 608720 (problem-145))))
+(test p357 (is (= 1739023853137 (problem-357))))
 
 
-;; (run! :euler)
+(defun run-tests ()
+  (run! :euler))
