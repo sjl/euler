@@ -1744,6 +1744,8 @@
                 ( 34 124   4 878 450 476 712 914 838 669 875 299 823 329 699)
                 (815 559 813 459 522 788 168 586 966 232 308 833 251 631 107)
                 (813 883 451 509 615  77 281 613 459 205 380 274 302  35 805)))))
+    ;; The hungarian algorithm finds a minimal assignment, but we want a maximal
+    ;; one, so we'll just negate all the values and flip the sign at the end.
     (do-array (val matrix)
       (negatef val))
     (iterate

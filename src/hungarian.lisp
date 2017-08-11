@@ -1,6 +1,16 @@
 (in-package :euler.hungarian)
 
-;;;; Data
+;;;; Hungarian/Munkres Algorithm ----------------------------------------------
+;;; This is an implementation of the Hungarian algorithm for finding a minimal
+;;; assignment for a cost matrix in polynomial (O(n³)) time.
+;;;
+;;; Useful references:
+;;;
+;;; * http://www.netlib.org/utk/lsi/pcwLSI/text/node222.html
+;;; * http://csclab.murraystate.edu/~bob.pilgrim/445/munkres.html
+
+
+;;;; Data ---------------------------------------------------------------------
 (defstruct (assignment-problem (:conc-name ap-)
                                (:constructor make-assignment-problem%))
   original-matrix
@@ -41,7 +51,7 @@
       :primed-cols (make-array cols :initial-element nil))))
 
 
-;;;; Debug
+;;;; Debug --------------------------------------------------------------------
 (defun dump (data)
   (with-assignment-problem (data)
     (format t "   ~{   ~A ~^ ~}~%"
@@ -63,19 +73,34 @@
   (pr))
 
 
-;;;; Marking
+;;;; Marking ------------------------------------------------------------------
 (defun mark (row col row-vector col-vector)
   (setf (aref row-vector row) col
         (aref col-vector col) row))
 
 (defun unmark (row col row-vector col-vector)
+  ;; This is a bit fucky.
+  ;;
+  ;; Intuitively you would think that there should be at most one starred entry
+  ;; in each row/col, and at the end of each step this is true.  But when we're
+  ;; processing the alternating star/prime list, we start with the prime and
+  ;; star it before moving to the next entry in the list, which is what removes
+  ;; the existing star.
+  ;;
+  ;; If we just blindly nil out both vectors we might overwrite the coordinate
+  ;; that was just starred.  The solution is to make sure we're only niling out
+  ;; data for the actual thing we're unmarking.
+  ;;
+  ;; Another (possibly cleaner?) solution would be to reverse the alternating
+  ;; prime/star list.  That was we'd unstar the existing zeros before starring
+  ;; their primed twin, and everything would work nicely.
   (when (eql (aref row-vector row) col)
     (setf  (aref row-vector row) nil))
   (when (eql (aref col-vector col) row)
     (setf (aref col-vector col) nil)))
 
 
-;;;; Starring
+;;;; Starring -----------------------------------------------------------------
 (defun star (data row col)
   (with-assignment-problem (data)
     (mark row col starred-rows starred-cols)))
@@ -106,7 +131,7 @@
   (eql (starred-col-for-row data row) col))
 
 
-;;;; Priming
+;;;; Priming ------------------------------------------------------------------
 (defun prime (data row col)
   (with-assignment-problem (data)
     (mark row col primed-rows primed-cols)))
@@ -129,7 +154,7 @@
   (eql (primed-col-for-row data row) col))
 
 
-;;;; Covering
+;;;; Covering -----------------------------------------------------------------
 (defun cover-row (data row)
   (setf (aref (ap-covered-rows data) row) t))
 
@@ -187,7 +212,7 @@
   (every #'identity (ap-covered-cols data)))
 
 
-;;;; Incrementing
+;;;; Incrementing -------------------------------------------------------------
 (defun incf-row (data row i)
   (with-assignment-problem (data)
     (dotimes (col cols)
