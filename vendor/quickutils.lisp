@@ -2,7 +2,7 @@
 ;;;; See http://quickutil.org for details.
 
 ;;;; To regenerate:
-;;;; (qtlc:save-utils-as "quickutils.lisp" :utilities '(:COMPOSE :CURRY :DEFINE-CONSTANT :EMPTYP :ENSURE-BOOLEAN :ENSURE-FUNCTION :ENSURE-GETHASH :EQUIVALENCE-CLASSES :MAP-COMBINATIONS :MAP-PERMUTATIONS :MAXF :MINF :N-GRAMS :RANGE :RCURRY :READ-FILE-INTO-STRING :REMOVEF :SWITCH :WITH-GENSYMS) :ensure-package T :package "EULER.QUICKUTILS")
+;;;; (qtlc:save-utils-as "quickutils.lisp" :utilities '(:COMPOSE :COPY-ARRAY :CURRY :DEFINE-CONSTANT :EMPTYP :ENSURE-BOOLEAN :ENSURE-FUNCTION :ENSURE-GETHASH :EQUIVALENCE-CLASSES :MAP-COMBINATIONS :MAP-PERMUTATIONS :MAXF :MINF :N-GRAMS :RANGE :RCURRY :READ-FILE-INTO-STRING :REMOVEF :SWITCH :WITH-GENSYMS) :ensure-package T :package "EULER.QUICKUTILS")
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (unless (find-package "EULER.QUICKUTILS")
@@ -14,13 +14,13 @@
 
 (when (boundp '*utilities*)
   (setf *utilities* (union *utilities* '(:MAKE-GENSYM-LIST :ENSURE-FUNCTION
-                                         :COMPOSE :CURRY :DEFINE-CONSTANT
-                                         :NON-ZERO-P :EMPTYP :ENSURE-BOOLEAN
-                                         :ENSURE-GETHASH :EQUIVALENCE-CLASSES
-                                         :MAP-COMBINATIONS :MAP-PERMUTATIONS
-                                         :MAXF :MINF :TAKE :N-GRAMS :RANGE
-                                         :RCURRY :ONCE-ONLY :WITH-OPEN-FILE*
-                                         :WITH-INPUT-FROM-FILE
+                                         :COMPOSE :COPY-ARRAY :CURRY
+                                         :DEFINE-CONSTANT :NON-ZERO-P :EMPTYP
+                                         :ENSURE-BOOLEAN :ENSURE-GETHASH
+                                         :EQUIVALENCE-CLASSES :MAP-COMBINATIONS
+                                         :MAP-PERMUTATIONS :MAXF :MINF :TAKE
+                                         :N-GRAMS :RANGE :RCURRY :ONCE-ONLY
+                                         :WITH-OPEN-FILE* :WITH-INPUT-FROM-FILE
                                          :READ-FILE-INTO-STRING :REMOVEF
                                          :STRING-DESIGNATOR :WITH-GENSYMS
                                          :EXTRACT-FUNCTION-NAME :SWITCH))))
@@ -75,6 +75,24 @@ and then calling the next one with the primary value of the last."
            (lambda (&rest arguments)
              (declare (dynamic-extent arguments))
              ,(compose-1 funs))))))
+  
+
+  (defun copy-array (array &key (element-type (array-element-type array))
+                                (fill-pointer (and (array-has-fill-pointer-p array)
+                                                   (fill-pointer array)))
+                                (adjustable (adjustable-array-p array)))
+    "Returns an undisplaced copy of `array`, with same `fill-pointer` and
+adjustability (if any) as the original, unless overridden by the keyword
+arguments."
+    (let* ((dimensions (array-dimensions array))
+           (new-array (make-array dimensions
+                                  :element-type element-type
+                                  :adjustable adjustable
+                                  :fill-pointer fill-pointer)))
+      (dotimes (i (array-total-size array))
+        (setf (row-major-aref new-array i)
+              (row-major-aref array i)))
+      new-array))
   
 
   (defun curry (function &rest arguments)
@@ -526,8 +544,8 @@ returns the values of `default` if no keys match."
     (generate-switch-body whole object clauses test key '(cerror "Return NIL from CSWITCH.")))
   
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (export '(compose curry define-constant emptyp ensure-boolean ensure-function
-            ensure-gethash equivalence-classes map-combinations
+  (export '(compose copy-array curry define-constant emptyp ensure-boolean
+            ensure-function ensure-gethash equivalence-classes map-combinations
             map-permutations maxf minf n-grams range rcurry
             read-file-into-string removef switch eswitch cswitch with-gensyms
             with-unique-names)))

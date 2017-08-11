@@ -27,6 +27,7 @@
                (:module "src" :serial t
                 :components ((:file "primes")
                              (:file "utils")
-                             (:file "euler")
+                             (:file "hungarian")
+                             (:file "problems")
                              (:file "poker")))))
 

@@ -5,6 +5,7 @@
   :utilities '(
 
                :compose
+               :copy-array
                :curry
                :define-constant
                :emptyp

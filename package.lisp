@@ -15,3 +15,13 @@
     :euler
     :anaphora-basic
     :euler.quickutils))
+
+(defpackage :euler.hungarian
+  (:use
+    :cl
+    :iterate
+    :losh
+    :euler
+    :euler.quickutils)
+  (:export
+    :find-minimal-assignment))
