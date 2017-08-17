@@ -3,9 +3,9 @@
     :cl
     :iterate
     :losh
-    :5am
     :euler.quickutils)
-  (:shadowing-import-from :5am :test))
+  (:import-from :1am :is)
+  (:shadowing-import-from :1am :test))
 
 (defpackage :euler.poker
   (:use

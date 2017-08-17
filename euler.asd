@@ -10,9 +10,10 @@
 
   :depends-on (
 
+               :1am
                :anaphora
+               :cl-pcg
                :cl-strings
-               :fiveam
                :iterate
                :local-time
                :losh

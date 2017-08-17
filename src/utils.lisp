@@ -509,3 +509,29 @@
                    (aref matrix source-row source-col)))
            (finally (return result))))
 
+
+(defun geometric-pmf (success-probability trials)
+  "The probability mass function of the geometric distribution.
+
+  Returns the probability that exactly `trials` trials will be required to see
+  the first success in a series of Bernoulli trials with `success-probability`.
+
+  "
+  (* (expt (- 1 success-probability) (1- trials))
+     success-probability))
+
+(defun geometric-cdf (success-probability trials)
+  "The cumulative distribution function of the geometric distribution.
+
+  Returns the probability that `trials` or fewer trials will be required to see
+  the first success in a series of Bernoulli trials with `success-probability`.
+
+  "
+  (- 1 (expt (- 1 success-probability) trials)))
+
+
+(defun round-to (number precision &optional (rounder #'round))
+  ;; http://www.codecodex.com/wiki/Round_a_number_to_a_specific_decimal_place#Common_Lisp
+  (coerce (let ((div (expt 10 precision)))
+            (/ (funcall rounder (* number div)) div))
+          (type-of number)))

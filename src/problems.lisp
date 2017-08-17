@@ -1714,6 +1714,81 @@
         (when reversible
           (sum (if (= i j) 1 2)))))))
 
+(defun problem-323 ()
+  ;; Let y0, y1, y2,... be a sequence of random unsigned 32 bit integers (i.e.
+  ;; 0 ≤ yi < 2^32, every value equally likely).
+  ;;
+  ;; For the sequence xi the following recursion is given:
+  ;;
+  ;;     x0 = 0 and
+  ;;     xi = x_i-1 | y_i-1, for i > 0. (| is the bitwise-OR operator)
+  ;;
+  ;; It can be seen that eventually there will be an index N such that
+  ;; xi = 2^32 - 1 (a bit-pattern of all ones) for all i ≥ N.
+  ;;
+  ;; Find the expected value of N.
+  ;;
+  ;; Give your answer rounded to 10 digits after the decimal point.
+  (labels
+      ;; Assuming a perfectly uniform random number generator, each bit of each
+      ;; randomly-generated bit will be independent of the others.  So we can
+      ;; treat this problem as a set of 32 independent Bernoulli trials, and are
+      ;; trying to find the expected numbers of iterations required for all 32
+      ;; trials to succeed at least once.
+      ;;
+      ;; We can start by actually doing the experiments.  This will be
+      ;; impractical for large numbers of parallel trials, but gives us a way to
+      ;; sanity check our work later.
+      ((empirical-test ()
+         (iterate (counting t) (until (randomp))))
+       (empirical-tests (runners)
+         (iterate (repeat runners)
+                  (maximizing (empirical-test))))
+       (run-empirical-tests (runners)
+         (coerce (iterate (repeat 1000000)
+                          (averaging (empirical-tests runners)))
+                 'double-float))
+       ;; Running the experiments for 32 parallel trials enough times to get 10
+       ;; digits of accuracy is computationally infeasible, so we'll need to use
+       ;; some math.
+       ;;
+       ;; The expected value the problem is looking for is:
+       ;;
+       ;;     (1 * P(finishing on turn 1)) +
+       ;;     (2 * P(finishing on turn 2)) +
+       ;;                  ...             +
+       ;;     (n * P(finishing on turn n))
+       ;;
+       ;; We solve this by finding a closed form solution for P(finishing on
+       ;; turn n), and then adding enough terms to get our ten digits of
+       ;; precision.
+       (probability-of-finishing-by (runners n)
+         ;; The probability of a single run finishing on or before turn N is
+         ;; given by the cumulative distribution function of the geometric
+         ;; distribution.
+         ;;
+         ;; Because all the trials are independent, we can multiply their
+         ;; probabilities to find the probability for the group as a whole.
+         (expt (geometric-cdf 0.5d0 n) runners))
+       (probability-of-finishing-on (runners n)
+         ;; The probability of finishing EXACTLY on turn N can be found by
+         ;; taking N's cumulative probability and subtracting N-1's cumulative
+         ;; probability.
+         (- (probability-of-finishing-by runners n)
+            (probability-of-finishing-by runners (1- n))))
+       (expected-value (runners)
+         (iterate
+           (for n :from 1 :below 1000)
+           (for prob = (probability-of-finishing-on runners n))
+           (summing (* n prob))))
+       (sanity-check (runners)
+         (assert (= (round-to (run-empirical-tests runners) 1)
+                    (round-to (expected-value runners) 1)))))
+    (when nil
+      (iterate (for i :from 1 :to 6)
+               (sanity-check i)))
+    (round-to (expected-value 32) 10)))
+
 (defun problem-345 ()
   ;; We define the Matrix Sum of a matrix as the maximum sum of matrix elements
   ;; with each element being the only one in his row and column. For example,
@@ -1820,9 +1895,6 @@
 
 
 ;;;; Tests --------------------------------------------------------------------
-(def-suite :euler)
-(in-suite :euler)
-
 (test p1 (is (= 233168 (problem-1))))
 (test p2 (is (= 4613732 (problem-2))))
 (test p3 (is (= 6857 (problem-3))))
@@ -1892,8 +1964,10 @@
 (test p79 (is (= 73162890 (problem-79))))
 (test p92 (is (= 8581146 (problem-92))))
 (test p145 (is (= 608720 (problem-145))))
+(test p323 (is (= 6.3551758451d0 (problem-323))))
+(test p345 (is (= 13938 (problem-345))))
 (test p357 (is (= 1739023853137 (problem-357))))
 
 
 (defun run-tests ()
-  (run! :euler))
+  (1am:run))
