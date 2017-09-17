@@ -1687,6 +1687,22 @@
     (iterate (for i :from 1 :below 10000000)
              (counting (= 89 (square-chain-end i))))))
 
+(defun problem-97 ()
+  ;; The first known prime found to exceed one million digits was discovered in
+  ;; 1999, and is a Mersenne prime of the form 2^6972593−1; it contains exactly
+  ;; 2,098,960 digits. Subsequently other Mersenne primes, of the form 2^p−1,
+  ;; have been found which contain more digits.
+  ;;
+  ;; However, in 2004 there was found a massive non-Mersenne prime which
+  ;; contains 2,357,207 digits: 28433×2^7830457+1.
+  ;;
+  ;; Find the last ten digits of this prime number.
+  (-<> 2
+    (expt <> 7830457)
+    (* 28433 <>)
+    1+
+    (mod <> (expt 10 10))))
+
 (defun problem-145 ()
   ;; Some positive integers n have the property that the sum [ n + reverse(n) ]
   ;; consists entirely of odd (decimal) digits. For instance, 36 + 63 = 99 and
@@ -1963,6 +1979,7 @@
 (test p74 (is (= 402 (problem-74))))
 (test p79 (is (= 73162890 (problem-79))))
 (test p92 (is (= 8581146 (problem-92))))
+(test p97 (is (= 8739992577 (problem-97))))
 (test p145 (is (= 608720 (problem-145))))
 (test p323 (is (= 6.3551758451d0 (problem-323))))
 (test p345 (is (= 13938 (problem-345))))
