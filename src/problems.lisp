@@ -472,7 +472,7 @@
   ;;
   ;; What is the total of all the name scores in the file?
   (labels ((read-names ()
-             (-<> "data/22-names.txt"
+             (-<> "data/022-names.txt"
                parse-strings-file
                (sort <> #'string<)))
            (name-score (name)
@@ -942,7 +942,7 @@
              (sum word :key #'letter-number))
            (triangle-word-p (word)
              (trianglep (word-value word))))
-    (count-if #'triangle-word-p (parse-strings-file "data/42-words.txt"))))
+    (count-if #'triangle-word-p (parse-strings-file "data/042-words.txt"))))
 
 (defun problem-43 ()
   ;; The number, 1406357289, is a 0 to 9 pandigital number because it is made up
@@ -1263,7 +1263,7 @@
   ;; hand there is a clear winner.
   ;;
   ;; How many hands does Player 1 win?
-  (iterate (for line :in-file "data/54-poker.txt" :using #'read-line)
+  (iterate (for line :in-file "data/054-poker.txt" :using #'read-line)
            (for cards = (mapcar #'euler.poker::parse-card
                                 (cl-strings:split line #\space)))
            (for p1 = (take 5 cards))
@@ -1402,7 +1402,7 @@
   ;; As...'), a file containing the encrypted ASCII codes, and the knowledge
   ;; that the plain text must contain common English words, decrypt the message
   ;; and find the sum of the ASCII values in the original text.
-  (let* ((data (-<> "data/59-cipher.txt"
+  (let* ((data (-<> "data/059-cipher.txt"
                  read-file-into-string
                  (substitute #\space #\, <>)
                  read-all-from-string))
@@ -1652,7 +1652,7 @@
   ;; Given that the three characters are always asked for in order, analyse
   ;; the file so as to determine the shortest possible secret passcode of
   ;; unknown length.
-  (let ((attempts (-<> "data/79-keylog.txt"
+  (let ((attempts (-<> "data/079-keylog.txt"
                     read-all-from-file
                     (mapcar #'digits <>)
                     (mapcar (rcurry #'coerce 'vector) <>))))
@@ -1702,6 +1702,75 @@
     (* 28433 <>)
     1+
     (mod <> (expt 10 10))))
+
+(defun problem-102 ()
+  ;; Three distinct points are plotted at random on a Cartesian plane, for which
+  ;; -1000 ≤ x, y ≤ 1000, such that a triangle is formed.
+  ;;
+  ;; Consider the following two triangles:
+  ;;
+  ;;     A(-340,495), B(-153,-910), C(835,-947)
+  ;;
+  ;;     X(-175,41), Y(-421,-714), Z(574,-645)
+  ;;
+  ;; It can be verified that triangle ABC contains the origin, whereas triangle
+  ;; XYZ does not.
+  ;;
+  ;; Using triangles.txt (right click and 'Save Link/Target As...'), a 27K text
+  ;; file containing the co-ordinates of one thousand "random" triangles, find
+  ;; the number of triangles for which the interior contains the origin.
+  ;;
+  ;; NOTE: The first two examples in the file represent the triangles in the
+  ;; example given above.
+  (labels ((parse-file (file)
+             (iterate (for line :in-file file :using #'read-line)
+                      (for (ax ay bx by cx cy) =
+                           (mapcar #'parse-integer (cl-strings:split line #\,)))
+                      (collect (list (cons ax ay)
+                                     (cons bx by)
+                                     (cons cx cy)))))
+           (find-side-vertical (a b p)
+             "Return which side of the line AB point P falls on."
+             (destructuring-bind (ax . ay) a
+               (destructuring-bind (bx . by) b
+                 (if (= ax bx)
+                   (find-side-horizontal a b p)
+                   (destructuring-bind (px . py) p
+                     (let* ((slope (/ (- ay by)
+                                      (- ax bx)))
+                            (y-intercept (- ay (* slope ax)))
+                            (line-y (+ y-intercept (* slope px))))
+                       (cond
+                         ((> py line-y) :above)
+                         ((< py line-y) :below)
+                         ((= py line-y) :on))))))))
+           (find-side-horizontal (a b p)
+             "Return which side of the line AB point P falls on."
+             (destructuring-bind (ax . ay) a
+               (destructuring-bind (bx . by) b
+                 (if (= ay by)
+                   (find-side-vertical a b p)
+                   (destructuring-bind (px . py) p
+                     (let* ((slope (/ (- ax bx)
+                                      (- ay by)))
+                            (x-intercept (- ax (* slope ay)))
+                            (line-x (+ x-intercept (* slope py))))
+                       (cond
+                         ((> px line-x) :right)
+                         ((< px line-x) :left)
+                         ((= px line-x) :on))))))))
+           (check-line (a b c p)
+             (let ((result-triangle (find-side-vertical a b c))
+                   (result-point (find-side-vertical a b p)))
+               (or (eq result-point :on)
+                   (eq result-point result-triangle))))
+           (check-triangle (a b c)
+             (let ((origin (cons 0 0)))
+               (and (check-line a b c origin)
+                    (check-line c a b origin)
+                    (check-line b c a origin)))))
+    (iterate (for (a b c) :in (parse-file "data/102-triangles.txt"))
+             (counting (check-triangle a b c)))))
 
 (defun problem-145 ()
   ;; Some positive integers n have the property that the sum [ n + reverse(n) ]
@@ -1980,6 +2049,7 @@
 (test p79 (is (= 73162890 (problem-79))))
 (test p92 (is (= 8581146 (problem-92))))
 (test p97 (is (= 8739992577 (problem-97))))
+(test p102 (is (= 228 (problem-102))))
 (test p145 (is (= 608720 (problem-145))))
 (test p323 (is (= 6.3551758451d0 (problem-323))))
 (test p345 (is (= 13938 (problem-345))))
