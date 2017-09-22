@@ -1726,49 +1726,17 @@
              (iterate (for line :in-file file :using #'read-line)
                       (for (ax ay bx by cx cy) =
                            (mapcar #'parse-integer (cl-strings:split line #\,)))
-                      (collect (list (cons ax ay)
-                                     (cons bx by)
-                                     (cons cx cy)))))
-           (find-side-vertical (a b p)
-             "Return which side of the line AB point P falls on."
-             (destructuring-bind (ax . ay) a
-               (destructuring-bind (bx . by) b
-                 (if (= ax bx)
-                   (find-side-horizontal a b p)
-                   (destructuring-bind (px . py) p
-                     (let* ((slope (/ (- ay by)
-                                      (- ax bx)))
-                            (y-intercept (- ay (* slope ax)))
-                            (line-y (+ y-intercept (* slope px))))
-                       (cond
-                         ((> py line-y) :above)
-                         ((< py line-y) :below)
-                         ((= py line-y) :on))))))))
-           (find-side-horizontal (a b p)
-             "Return which side of the line AB point P falls on."
-             (destructuring-bind (ax . ay) a
-               (destructuring-bind (bx . by) b
-                 (if (= ay by)
-                   (find-side-vertical a b p)
-                   (destructuring-bind (px . py) p
-                     (let* ((slope (/ (- ax bx)
-                                      (- ay by)))
-                            (x-intercept (- ax (* slope ay)))
-                            (line-x (+ x-intercept (* slope py))))
-                       (cond
-                         ((> px line-x) :right)
-                         ((< px line-x) :left)
-                         ((= px line-x) :on))))))))
-           (check-line (a b c p)
-             (let ((result-triangle (find-side-vertical a b c))
-                   (result-point (find-side-vertical a b p)))
-               (or (eq result-point :on)
-                   (eq result-point result-triangle))))
+                      (collect (list (vec2 ax ay)
+                                     (vec2 bx by)
+                                     (vec2 cx cy)))))
            (check-triangle (a b c)
-             (let ((origin (cons 0 0)))
-               (and (check-line a b c origin)
-                    (check-line c a b origin)
-                    (check-line b c a origin)))))
+             ;; A point is within a triangle if its barycentric coordinates
+             ;; (with respect to that triangle) are all within 0 to 1.
+             (multiple-value-bind (u v w)
+                 (barycentric a b c (vec2 0 0))
+               (and (<= 0 u 1)
+                    (<= 0 v 1)
+                    (<= 0 w 1)))))
     (iterate (for (a b c) :in (parse-file "data/102-triangles.txt"))
              (counting (check-triangle a b c)))))
 

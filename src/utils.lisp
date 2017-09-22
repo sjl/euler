@@ -535,3 +535,50 @@
   (coerce (let ((div (expt 10 precision)))
             (/ (funcall rounder (* number div)) div))
           (type-of number)))
+
+
+(defun vec2 (x y)
+  (vector x y))
+
+(defun vx (vec2)
+  (aref vec2 0))
+
+(defun vy (vec2)
+  (aref vec2 1))
+
+(defun vec2+ (a b)
+  (vec2 (+ (vx a) (vx b))
+        (+ (vy a) (vy b))))
+
+(defun vec2- (a b)
+  (vec2 (- (vx a) (vx b))
+        (- (vy a) (vy b))))
+
+(defun vec2-dot (a b)
+  (+ (* (vx a) (vx b))
+     (* (vy a) (vy b))))
+
+
+(defun barycentric (a b c point)
+  "Return the barycentric coords of `point` with respect to the triangle `abc`.
+
+  `a`, `b`, `c`, and `point` must be `vec2`s.
+
+  The resulting `u`, `v`, and `w` barycentric coordinates will be returned as
+  three values.
+
+  "
+  ;; https://gamedev.stackexchange.com/a/23745
+  (let* ((v0 (vec2- b a))
+         (v1 (vec2- c a))
+         (v2 (vec2- point a))
+         (d00 (vec2-dot v0 v0))
+         (d01 (vec2-dot v0 v1))
+         (d11 (vec2-dot v1 v1))
+         (d20 (vec2-dot v2 v0))
+         (d21 (vec2-dot v2 v1))
+         (denom (- (* d00 d11) (* d01 d01)))
+         (v (/ (- (* d11 d20) (* d01 d21)) denom))
+         (w (/ (- (* d00 d21) (* d01 d20)) denom))
+         (u (- 1 v w)))
+    (values u v w)))
