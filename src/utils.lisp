@@ -44,6 +44,15 @@
                               (setf ,i ,remaining)
                               ,digit)))))))
 
+(defmacro-driver (FOR var IN-CSV-FILE filename &optional
+                  KEY (key #'identity) DELIMITER (delimiter #\,))
+  (let ((kwd (if generate 'generate 'for)))
+    (with-gensyms (line)
+      `(progn
+         (generate ,line :in-file ,filename :using #'read-line)
+         (,kwd ,var :next (mapcar ,key (cl-strings:split (next ,line) ,delimiter)))))))
+
+
 (defun digits-length (n &optional (radix 10))
   "Return how many digits `n` has in base `radix`."
   (if (zerop n)
@@ -582,3 +591,4 @@
          (w (/ (- (* d00 d21) (* d01 d20)) denom))
          (u (- 1 v w)))
     (values u v w)))
+

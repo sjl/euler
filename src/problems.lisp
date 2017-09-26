@@ -1703,6 +1703,25 @@
     1+
     (mod <> (expt 10 10))))
 
+(defun problem-99 ()
+  ;; Comparing two numbers written in index form like 2^11 and 3^7 is not
+  ;; difficult, as any calculator would confirm that 2^11 = 2048 < 3^7 = 2187.
+  ;;
+  ;; However, confirming that 632382^518061 > 519432^525806 would be much more
+  ;; difficult, as both numbers contain over three million digits.
+  ;;
+  ;; Using base_exp.txt (right click and 'Save Link/Target As...'), a 22K text
+  ;; file containing one thousand lines with a base/exponent pair on each line,
+  ;; determine which line number has the greatest numerical value.
+  ;;
+  ;; NOTE: The first two lines in the file represent the numbers in the example
+  ;; given above.
+  (iterate
+    (for line-number :from 1)
+    (for (base exponent) :in-csv-file "data/099-exponents.txt"
+         :key #'parse-integer)
+    (finding line-number :maximizing (* exponent (log base)))))
+
 (defun problem-102 ()
   ;; Three distinct points are plotted at random on a Cartesian plane, for which
   ;; -1000 ≤ x, y ≤ 1000, such that a triangle is formed.
@@ -1723,12 +1742,11 @@
   ;; NOTE: The first two examples in the file represent the triangles in the
   ;; example given above.
   (labels ((parse-file (file)
-             (iterate (for line :in-file file :using #'read-line)
-                      (for (ax ay bx by cx cy) =
-                           (mapcar #'parse-integer (cl-strings:split line #\,)))
-                      (collect (list (vec2 ax ay)
-                                     (vec2 bx by)
-                                     (vec2 cx cy)))))
+             (iterate
+               (for (ax ay bx by cx cy) :in-csv-file file :key #'parse-integer)
+               (collect (list (vec2 ax ay)
+                              (vec2 bx by)
+                              (vec2 cx cy)))))
            (check-triangle (a b c)
              ;; A point is within a triangle if its barycentric coordinates
              ;; (with respect to that triangle) are all within 0 to 1.
@@ -2017,6 +2035,7 @@
 (test p79 (is (= 73162890 (problem-79))))
 (test p92 (is (= 8581146 (problem-92))))
 (test p97 (is (= 8739992577 (problem-97))))
+(test p99 (is (= 709 (problem-99))))
 (test p102 (is (= 228 (problem-102))))
 (test p145 (is (= 608720 (problem-145))))
 (test p323 (is (= 6.3551758451d0 (problem-323))))
