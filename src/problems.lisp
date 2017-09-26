@@ -1718,6 +1718,13 @@
   ;; given above.
   (iterate
     (for line-number :from 1)
+    ;; Lisp can compute the exponents, but it takes a really long time.  We can
+    ;; avoid having to compute the full values using:
+    ;;
+    ;;   log(base^expt) = expt * log(base)
+    ;;
+    ;; Taking the log of each number preserves their ordering, so we can compare
+    ;; the results and still be correct.
     (for (base exponent) :in-csv-file "data/099-exponents.txt"
          :key #'parse-integer)
     (finding line-number :maximizing (* exponent (log base)))))
