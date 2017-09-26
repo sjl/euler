@@ -53,6 +53,16 @@
          (,kwd ,var :next (mapcar ,key (cl-strings:split (next ,line) ,delimiter)))))))
 
 
+(defmacro when-first-time (&body body)
+  `(if-first-time
+     (progn ,@body)))
+
+(defmacro unless-first-time (&body body)
+  `(if-first-time
+     nil
+     (progn ,@body)))
+
+
 (defun digits-length (n &optional (radix 10))
   "Return how many digits `n` has in base `radix`."
   (if (zerop n)

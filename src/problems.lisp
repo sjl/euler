@@ -1748,22 +1748,55 @@
   ;;
   ;; NOTE: The first two examples in the file represent the triangles in the
   ;; example given above.
-  (labels ((parse-file (file)
-             (iterate
-               (for (ax ay bx by cx cy) :in-csv-file file :key #'parse-integer)
-               (collect (list (vec2 ax ay)
-                              (vec2 bx by)
-                              (vec2 cx cy)))))
-           (check-triangle (a b c)
-             ;; A point is within a triangle if its barycentric coordinates
-             ;; (with respect to that triangle) are all within 0 to 1.
-             (multiple-value-bind (u v w)
-                 (barycentric a b c (vec2 0 0))
-               (and (<= 0 u 1)
-                    (<= 0 v 1)
-                    (<= 0 w 1)))))
+  (flet ((parse-file (file)
+           (iterate
+             (for (ax ay bx by cx cy) :in-csv-file file :key #'parse-integer)
+             (collect (list (vec2 ax ay)
+                            (vec2 bx by)
+                            (vec2 cx cy)))))
+         (check-triangle (a b c)
+           ;; A point is within a triangle if its barycentric coordinates
+           ;; (with respect to that triangle) are all within 0 to 1.
+           (multiple-value-bind (u v w)
+               (barycentric a b c (vec2 0 0))
+             (and (<= 0 u 1)
+                  (<= 0 v 1)
+                  (<= 0 w 1)))))
     (iterate (for (a b c) :in (parse-file "data/102-triangles.txt"))
              (counting (check-triangle a b c)))))
+
+(defun problem-112 ()
+  ;; Working from left-to-right if no digit is exceeded by the digit to its left
+  ;; it is called an increasing number; for example, 134468.
+  ;;
+  ;; Similarly if no digit is exceeded by the digit to its right it is called
+  ;; a decreasing number; for example, 66420.
+  ;;
+  ;; We shall call a positive integer that is neither increasing nor decreasing
+  ;; a "bouncy" number; for example, 155349.
+  ;;
+  ;; Clearly there cannot be any bouncy numbers below one-hundred, but just over
+  ;; half of the numbers below one-thousand (525) are bouncy. In fact, the least
+  ;; number for which the proportion of bouncy numbers first reaches 50% is 538.
+  ;;
+  ;; Surprisingly, bouncy numbers become more and more common and by the time we
+  ;; reach 21780 the proportion of bouncy numbers is equal to 90%.
+  ;;
+  ;; Find the least number for which the proportion of bouncy numbers is exactly
+  ;; 99%.
+  (flet ((bouncyp (integer)
+           (iterate
+             (for digit :in-digits-of integer)
+             (for prev :previous digit)
+             (unless-first-time
+               (oring (< prev digit) :into increasing)
+               (oring (> prev digit) :into decreasing))
+             (thereis (and increasing decreasing)))))
+    (iterate
+      (for i :from 1)
+      (for total :from 1)
+      (counting (bouncyp i) :into bouncy)
+      (finding i :such-that (= (/ bouncy total) 99/100)))))
 
 (defun problem-145 ()
   ;; Some positive integers n have the property that the sum [ n + reverse(n) ]
