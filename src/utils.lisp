@@ -75,6 +75,11 @@
            (collect d :at :beginning)))
 
 
+(defun-inline nth-digit (n integer &optional (radix 10))
+  "Return the `n`th digit of `integer` in base `radix`, counting from the right."
+  (mod (truncate integer (expt radix n)) radix))
+
+
 (defun digits-to-number (digits)
   (if digits
     (reduce (lambda (total digit)
@@ -549,11 +554,24 @@
   (- 1 (expt (- 1 success-probability) trials)))
 
 
-(defun round-to (number precision &optional (rounder #'round))
+(defun round-decimal (number decimal-places &optional (rounder #'round))
   ;; http://www.codecodex.com/wiki/Round_a_number_to_a_specific_decimal_place#Common_Lisp
-  (coerce (let ((div (expt 10 precision)))
+  (coerce (let ((div (expt 10 decimal-places)))
             (/ (funcall rounder (* number div)) div))
           (type-of number)))
+
+(defun round-to (number precision)
+  "Round `number` to the given `precision`.
+
+  Examples:
+
+    (round-to 13 10)      ; => 10
+    (round-to 15 10)      ; => 20
+    (round-to 44 25)      ; => 50
+    (round-to 457/87 1/2) ; => 11/2
+
+  "
+  (* precision (round number precision)))
 
 
 (defun vec2 (x y)

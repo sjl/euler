@@ -1825,6 +1825,29 @@
         (when reversible
           (sum (if (= i j) 1 2)))))))
 
+(defun problem-206 ()
+  ;; Find the unique positive integer whose square has the form
+  ;; 1_2_3_4_5_6_7_8_9_0, where each “_” is a single digit.
+  (flet ((targetp (i)
+           (and (= 0 (nth-digit 0 i))
+                (= 9 (nth-digit 2 i))
+                (= 8 (nth-digit 4 i))
+                (= 7 (nth-digit 6 i))
+                (= 6 (nth-digit 8 i))
+                (= 5 (nth-digit 10 i))
+                (= 4 (nth-digit 12 i))
+                (= 3 (nth-digit 14 i))
+                (= 2 (nth-digit 16 i))
+                (= 1 (nth-digit 18 i)))))
+    ;; The square ends with a 0, which means the original number must also end
+    ;; in 0.  This means the original number has to be divisible by 10, so we
+    ;; can take bigger steps.
+    (iterate
+      (with min = (round-to (sqrt 1020304050607080900) 10))
+      (with max = (floor (sqrt 1929394959697989990)))
+      (for i :from min :to max :by 10)
+      (finding i :such-that (targetp (square i))))))
+
 (defun problem-323 ()
   ;; Let y0, y1, y2,... be a sequence of random unsigned 32 bit integers (i.e.
   ;; 0 ≤ yi < 2^32, every value equally likely).
@@ -1893,12 +1916,12 @@
            (for prob = (probability-of-finishing-on runners n))
            (summing (* n prob))))
        (sanity-check (runners)
-         (assert (= (round-to (run-empirical-tests runners) 1)
-                    (round-to (expected-value runners) 1)))))
+         (assert (= (round-decimal (run-empirical-tests runners) 1)
+                    (round-decimal (expected-value runners) 1)))))
     (when nil
       (iterate (for i :from 1 :to 6)
                (sanity-check i)))
-    (round-to (expected-value 32) 10)))
+    (round-decimal (expected-value 32) 10)))
 
 (defun problem-345 ()
   ;; We define the Matrix Sum of a matrix as the maximum sum of matrix elements
@@ -2078,6 +2101,7 @@
 (test p99 (is (= 709 (problem-99))))
 (test p102 (is (= 228 (problem-102))))
 (test p145 (is (= 608720 (problem-145))))
+(test p206 (is (= 1389019170 (problem-206))))
 (test p323 (is (= 6.3551758451d0 (problem-323))))
 (test p345 (is (= 13938 (problem-345))))
 (test p357 (is (= 1739023853137 (problem-357))))
