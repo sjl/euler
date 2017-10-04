@@ -75,6 +75,11 @@
            (collect d :at :beginning)))
 
 
+(defun-inline append-digit (digit number &optional (radix 10))
+  "Appened `digit` to `number` in base `radix` as a low-order digit."
+  (+ digit (* number radix)))
+
+
 (defun-inline nth-digit (n integer &optional (radix 10))
   "Return the `n`th digit of `integer` in base `radix`, counting from the right."
   (mod (truncate integer (expt radix n)) radix))

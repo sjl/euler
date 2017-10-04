@@ -2071,7 +2071,7 @@
                   (right-truncatable-harshad-p number)))
            (strong-right-truncatable-harshad-prime-p (number)
              ;; A "strong, right-truncatable Harshad prime" is not itself
-             ;; a Harshad number.  Prime numbers can never be Harshad numbers
+             ;; a Harshad number!  Prime numbers can never be Harshad numbers
              ;; (except for single-digit numbers), because otherwise they would
              ;; have to have a divisor (the sum of their digits) (thanks
              ;; lebossle).
@@ -2083,17 +2083,22 @@
                   (strong-right-truncatable-harshad-p
                     (truncate-number-right number 1))))
            (harshad-total (limit)
-             (sum
-               (recursively ((digits ()))
-                 (let ((n (digits-to-number digits :from-end t)))
-                   (cond
-                     ((or (>= n limit)) nil)
-                     ((or (zerop n) (harshadp n))
-                      (mapcan #'recur
-                              (loop :for i :from (if (null digits) 1 0) :to 9
-                                    :collect (cons i digits))))
-                     ((strong-right-truncatable-harshad-prime-p n) (list n))
-                     (t nil)))))))
+             ;; Instead of trying to check every number below 10^14 for
+             ;; primality, we can recursively build right-truncatable Harshad
+             ;; numbers until we hit a non-Harshad (or the limit), then test
+             ;; that for strong-right-truncatable-harshad-prime-ness.
+             ;;
+             ;; If we work from the left (starting at the high order digits)
+             ;; and make sure the number is a Harshad number at each step,
+             ;; we automatically ensure it's right truncatable.
+             (recursively ((n 0))
+               (cond
+                 ((>= n limit) 0)
+                 ((or (zerop n) (harshadp n))
+                  (iterate (for digit :from (if (zerop n) 1 0) :to 9)
+                           (summing (recur (append-digit digit n)))))
+                 ((strong-right-truncatable-harshad-prime-p n) n)
+                 (t 0)))))
     (harshad-total (expt 10 14))))
 
 
