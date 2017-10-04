@@ -80,11 +80,20 @@
   (mod (truncate integer (expt radix n)) radix))
 
 
-(defun digits-to-number (digits)
+(defun digits-to-number (digits &key from-end (radix 10))
+  "Concatenate `digits` to return an integer in base `radix`.
+
+  If `from-end` is `t`, start at the end of the list.
+
+  "
   (if digits
-    (reduce (lambda (total digit)
-              (+ (* total 10) digit))
-            digits)
+    (if from-end
+      (iterate (for d :in digits)
+               (for multiplier :first 1 :then (* radix multiplier))
+               (summing (* multiplier d)))
+      (reduce (lambda (total digit)
+                (+ (* total radix) digit))
+              digits))
     0))
 
 (defun extremely-fucking-unsafe-digits-to-number (digits)
@@ -250,11 +259,11 @@
             (- final (* 3 leg))))))
 
 
-(defun truncate-number-left (n amount &optional (radix 10))
+(defun-inline truncate-number-left (n amount &optional (radix 10))
   "Chop `amount` digits off the left side of `n` in base `radix`."
   (mod n (expt radix (- (digits-length n radix) amount))))
 
-(defun truncate-number-right (n amount &optional (radix 10))
+(defun-inline truncate-number-right (n amount &optional (radix 10))
   "Chop `amount` digits off the right side of `n` in base `radix`."
   (truncate n (expt radix amount)))
 

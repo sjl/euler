@@ -2027,6 +2027,75 @@
                      (prime-generating-integer-p candidate))
             (summing candidate))))))
 
+(defun problem-387 ()
+  ;; A Harshad or Niven number is a number that is divisible by the sum of its digits.
+  ;; 201 is a Harshad number because it is divisible by 3 (the sum of its digits.)
+  ;; When we truncate the last digit from 201, we get 20, which is a Harshad number.
+  ;; When we truncate the last digit from 20, we get 2, which is also a Harshad number.
+  ;;
+  ;; Let's call a Harshad number that, while recursively truncating the last
+  ;; digit, always results in a Harshad number a right truncatable Harshad
+  ;; number.
+  ;;
+  ;; Also: 201/3=67 which is prime.
+  ;; Let's call a Harshad number that, when divided by the sum of its digits,
+  ;; results in a prime a strong Harshad number.
+  ;;
+  ;; Now take the number 2011 which is prime.  When we truncate the last digit
+  ;; from it we get 201, a strong Harshad number that is also right truncatable.
+  ;; Let's call such primes strong, right truncatable Harshad primes.
+  ;;
+  ;; You are given that the sum of the strong, right truncatable Harshad primes
+  ;; less than 10000 is 90619.
+  ;;
+  ;; Find the sum of the strong, right truncatable Harshad primes less than
+  ;; 10^14.
+  (labels ((harshadp (number)
+             (dividesp number (sum (digits number))))
+           (strong-harshad-p (number)
+             (multiple-value-bind (result remainder)
+                 (truncate number (sum (digits number)))
+               (and (zerop remainder)
+                    (primep result))))
+           (right-truncatable-harshad-p (number)
+             (iterate (for i :first number :then (truncate-number-right i 1))
+                      (until (zerop i))
+                      (always (harshadp i))))
+           (strong-right-truncatable-harshad-p (number)
+             ;; A "strong, right-truncatable Harshad number" is a number that is
+             ;; both a strong Harshad number and a right-truncatable Harshad
+             ;; number.  Note that after the first truncation the rest no longer
+             ;; need to be strong -- it's enough for this number itself to be
+             ;; strong.
+             (and (strong-harshad-p number)
+                  (right-truncatable-harshad-p number)))
+           (strong-right-truncatable-harshad-prime-p (number)
+             ;; A "strong, right-truncatable Harshad prime" is not itself
+             ;; a Harshad number.  Prime numbers can never be Harshad numbers
+             ;; (except for single-digit numbers), because otherwise they would
+             ;; have to have a divisor (the sum of their digits) (thanks
+             ;; lebossle).
+             ;;
+             ;; What we're looking for here are prime numbers for whom we can
+             ;; chop off the right digit and get strong, truncatable Harshad
+             ;; numbers.
+             (and (primep number)
+                  (strong-right-truncatable-harshad-p
+                    (truncate-number-right number 1))))
+           (harshad-total (limit)
+             (sum
+               (recursively ((digits ()))
+                 (let ((n (digits-to-number digits :from-end t)))
+                   (cond
+                     ((or (>= n limit)) nil)
+                     ((or (zerop n) (harshadp n))
+                      (mapcan #'recur
+                              (loop :for i :from (if (null digits) 1 0) :to 9
+                                    :collect (cons i digits))))
+                     ((strong-right-truncatable-harshad-prime-p n) (list n))
+                     (t nil)))))))
+    (harshad-total (expt 10 14))))
+
 
 ;;;; Tests --------------------------------------------------------------------
 (test p1 (is (= 233168 (problem-1))))
@@ -2105,6 +2174,7 @@
 (test p323 (is (= 6.3551758451d0 (problem-323))))
 (test p345 (is (= 13938 (problem-345))))
 (test p357 (is (= 1739023853137 (problem-357))))
+(test p387 (is (= 696067597313468 (problem-387))))
 
 
 (defun run-tests ()

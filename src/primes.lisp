@@ -207,6 +207,19 @@
   (primes% (1+ min) max))
 
 
+(defun-inline next-prime% (p)
+  (case p
+    ((nil) 2)
+    (2 3)
+    (t (iterate (for i :from (+ p 2) :by 2)
+                (finding i :such-that #'primep)))))
+
+(defmacro-driver (FOR var IN-PRIMES _)
+  (declare (ignore _))
+  (let ((kwd (if generate 'generate 'for)))
+    `(,kwd ,var :next (next-prime% ,var))))
+
+
 (defun nth-prime (n)
   "Return the `n`th prime number."
   (if (= n 1)
