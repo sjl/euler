@@ -343,7 +343,7 @@
   ;; 2^15 = 32768 and the sum of its digits is 3 + 2 + 7 + 6 + 8 = 26.
   ;;
   ;; What is the sum of the digits of the number 2^1000?
-  (sum (digits (expt 2 1000))))
+  (digital-sum (expt 2 1000)))
 
 (defun problem-17 ()
   ;; If the numbers 1 to 5 are written out in words: one, two, three, four,
@@ -438,7 +438,7 @@
   ;; and the sum of the digits in the number 10! is 3 + 6 + 2 + 8 + 8 + 0 + 0 = 27.
   ;;
   ;; Find the sum of the digits in the number 100!
-  (sum (digits (factorial 100))))
+  (digital-sum (factorial 100)))
 
 (defun problem-21 ()
   ;; Let d(n) be defined as the sum of proper divisors of n (numbers less than
@@ -1316,7 +1316,7 @@
   ;; maximum digital sum?
   (iterate (for-nested ((a :from 1 :below 100)
                         (b :from 1 :below 100)))
-           (maximizing (funcall #'sum (digits (expt a b))))))
+           (maximizing (digital-sum (expt a b)))))
 
 (defun problem-57 ()
   ;; It is possible to show that the square root of two can be expressed as an
@@ -1826,9 +1826,11 @@
           (sum (if (= i j) 1 2)))))))
 
 (defun problem-206 ()
+  (declare (optimize speed))
   ;; Find the unique positive integer whose square has the form
   ;; 1_2_3_4_5_6_7_8_9_0, where each “_” is a single digit.
   (flet ((targetp (i)
+           (declare (type fixnum i))
            (and (= 0 (nth-digit 0 i))
                 (= 9 (nth-digit 2 i))
                 (= 8 (nth-digit 4 i))
@@ -1847,6 +1849,60 @@
       (with max = (floor (sqrt 1929394959697989990)))
       (for i :from min :to max :by 10)
       (finding i :such-that (targetp (square i))))))
+
+(defun problem-315 ()
+  ;; Full description too long, see https://projecteuler.net/problem=315
+  (labels ((digit-to-bits (n)
+             ;; We'll represent the lit segments of a clock as bits:
+             ;;
+             ;;  -      1
+             ;; | |    2 3
+             ;;  -      0
+             ;; | |    4 5
+             ;;  -      6
+             (case n
+               ;;   6543210
+               (0 #b1111110)
+               (1 #b0101000)
+               (2 #b1011011)
+               (3 #b1101011)
+               (4 #b0101101)
+               (5 #b1100111)
+               (6 #b1110111)
+               (7 #b0101110)
+               (8 #b1111111)
+               (9 #b1101111)
+               (t #b0000000)))
+           (transition-sam (previous current)
+             ;; Sam turns off everything lit in the previous number, and turns
+             ;; on everything lit in the current one.
+             (let ((p (digit-to-bits previous))
+                   (c (digit-to-bits current)))
+               (+ (logcount p)
+                  (logcount c))))
+           (transition-max (previous current)
+             ;; Max only turns off the things that need to be turned off, and
+             ;; only turns on the things that need to be turned on.  This is
+             ;; just xor.
+             (let ((p (digit-to-bits previous))
+                   (c (digit-to-bits current)))
+               (logcount (logxor p c))))
+           (transition (transition-function previous-digits current-digits)
+             ;; The new digits will probably be shorter than the old digits.
+             (sum (mapcar-long transition-function nil
+                               previous-digits current-digits)))
+           (run-clock (seed)
+             (iterate
+               (for current :in-lists (list (mapcar (rcurry #'digits :from-end t)
+                                                    (digital-roots seed))
+                                            '(nil))) ; final turn-off
+               (for prev :previous current :initially nil)
+               (summing (transition #'transition-sam prev current) :into sam)
+               (summing (transition #'transition-max prev current) :into max)
+               (finally (return (values sam max))))))
+    (iterate (for n :from (expt 10 7) :to (* 2 (expt 10 7)))
+             (when (primep n)
+               (summing (multiple-value-call #'- (run-clock n)))))))
 
 (defun problem-323 ()
   ;; Let y0, y1, y2,... be a sequence of random unsigned 32 bit integers (i.e.
@@ -2051,10 +2107,10 @@
   ;; Find the sum of the strong, right truncatable Harshad primes less than
   ;; 10^14.
   (labels ((harshadp (number)
-             (dividesp number (sum (digits number))))
+             (dividesp number (digital-sum number)))
            (strong-harshad-p (number)
              (multiple-value-bind (result remainder)
-                 (truncate number (sum (digits number)))
+                 (truncate number (digital-sum number))
                (and (zerop remainder)
                     (primep result))))
            (right-truncatable-harshad-p (number)
@@ -2176,6 +2232,7 @@
 (test p102 (is (= 228 (problem-102))))
 (test p145 (is (= 608720 (problem-145))))
 (test p206 (is (= 1389019170 (problem-206))))
+(test p315 (is (= 13625242 (problem-315))))
 (test p323 (is (= 6.3551758451d0 (problem-323))))
 (test p345 (is (= 13938 (problem-345))))
 (test p357 (is (= 1739023853137 (problem-357))))

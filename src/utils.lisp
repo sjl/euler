@@ -69,10 +69,40 @@
     1
     (values (1+ (truncate (log (abs n) radix))))))
 
-(defun digits (n &optional (radix 10))
-  "Return a fresh list of the digits of `n` in base `radix`."
-  (iterate (for d :in-digits-of n :radix radix)
-           (collect d :at :beginning)))
+(defun digits (n &key (radix 10) from-end)
+  "Return a fresh list of the digits of `n` in base `radix`.
+
+  By default, the digits are returned high-order first, as you would read them.
+  Use `from-end` to get them low-order first:
+
+    (digits 123)             ; => (1 2 3)
+    (digits 123 :from-end t) ; => (3 2 1)
+
+  "
+  (if from-end
+    (iterate (for d :in-digits-of n :radix radix)
+             (collect d))
+    (iterate (for d :in-digits-of n :radix radix)
+             (collect d :at :beginning))))
+
+
+(defun-inlineable digital-sum (n &optional (radix 10))
+  "Return the sum of the digits of `n` in base `radix`."
+  (iterate (for digit :in-digits-of n :radix radix)
+           (summing digit)))
+
+(defun digital-root (n &optional (radix 10))
+  "Return the digital root of `n` in base `radix`."
+  (declare (inline digital-sum))
+  (iterate (for i :first n :then (digital-sum i radix))
+           (finding i :such-that (< i radix))))
+
+(defun digital-roots (n &optional (radix 10))
+  "Return a list of the digital roots of `n` in base `radix`."
+  (declare (inline digital-sum))
+  (iterate (for i :first n :then (digital-sum i radix))
+           (collect i)
+           (until (< i radix))))
 
 
 (defun-inline append-digit (digit number &optional (radix 10))
@@ -633,4 +663,16 @@
          (w (/ (- (* d00 d21) (* d01 d20)) denom))
          (u (- 1 v w)))
     (values u v w)))
+
+
+(defun mapcar-long (function fill list &rest more-lists)
+  "Like `mapcar`, but using the longest list, filling with `fill`."
+  (declare (optimize speed))
+  (flet ((head (list)
+           (if (null list) fill (car list))))
+    (iterate (with (the cons lists) = (cons list more-lists))
+             (with function = (ensure-function function))
+             (until (every #'null lists))
+             (collect (apply function (mapcar #'head lists)))
+             (map-into lists #'cdr lists))))
 
