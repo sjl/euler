@@ -1893,9 +1893,9 @@
                                previous-digits current-digits)))
            (run-clock (seed)
              (iterate
-               (for current :in-lists (list (mapcar (rcurry #'digits :from-end t)
-                                                    (digital-roots seed))
-                                            '(nil))) ; final turn-off
+               (for current :in-list (mapcar (rcurry #'digits :from-end t)
+                                             (digital-roots seed))
+                    :finally nil)
                (for prev :previous current :initially nil)
                (summing (transition #'transition-sam prev current) :into sam)
                (summing (transition #'transition-max prev current) :into max)
@@ -2222,8 +2222,6 @@
 (test p61 (is (= 28684 (problem-61))))
 (test p62 (is (= 127035954683 (problem-62))))
 (test p63 (is (= 49 (problem-63))))
-
-
 (test p74 (is (= 402 (problem-74))))
 (test p79 (is (= 73162890 (problem-79))))
 (test p92 (is (= 8581146 (problem-92))))

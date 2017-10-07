@@ -1,15 +1,45 @@
 (in-package :euler)
 
-(defmacro-driver (FOR var ITERATING function SEED value)
+(defmacro-driver (FOR var ITERATING function SEED value &optional
+                  INCLUDE-SEED include-seed?)
+  "Iterate `var` over the series `(f seed), (f (f seed)), (f (f (f seed))), ...`.
+
+  If `include-seed` is given the series will start with the seed itself first.
+
+  Examples:
+
+    (iterate (for n :iterating #'digital-sum :seed 10123456789)
+             (collect n)
+             (until (< n 10)))
+    ; => (46 10 1)
+
+    (iterate (for n :iterating #'digital-sum :seed 10123456789 :include-seed t)
+             (collect n)
+             (until (< n 10)))
+    ; => (10123456789 46 10 1)
+
+  "
   (let ((kwd (if generate 'generate 'for)))
     (with-gensyms (f)
       `(progn
          (with ,f = ,function)
          (,kwd ,var
-          :initially (funcall ,f ,value)
+          :initially ,(if include-seed?
+                        value
+                        `(funcall ,f ,value))
           :then (funcall ,f ,var))))))
 
 (defmacro-driver (FOR var IN-LOOPING list)
+  "Iterate `var` over `list`, looping when the end is reached.
+
+  Example:
+
+    (iterate (for x :in-looping '(1 2 3))
+             (repeat 5)
+             (collect x))
+    ; => (1 2 3 1 2)
+
+  "
   (let ((kwd (if generate 'generate 'for)))
     (with-gensyms (l remaining)
       `(progn
@@ -22,6 +52,14 @@
                     ,remaining)))))))
 
 (defmacro-driver (FOR var KEY function &sequence)
+  "Iterate `var` numerically as with `FOR`, applying `function` to the numbers.
+
+  Example:
+
+    (iterate (for x :key #'evenp :from 0 :to 8) (collect x))
+    ; => (T NIL T NIL T NIL T NIL T)
+
+  "
   (let ((kwd (if generate 'generate 'for)))
     (with-gensyms (i f)
       `(progn
@@ -29,6 +67,57 @@
          (generate ,i ,@(losh::expand-iterate-sequence-keywords))
          (,kwd ,var :next (funcall ,f (next ,i)))))))
 
+(defmacro-driver (FOR var IN-LIST list &optional
+                  BY (step-function '#'cdr)
+                  INITIALLY (initial-value nil initial-value?)
+                  FINALLY (final-value nil final-value?))
+  "Iterate `var` over `list` like vanilla `FOR var IN`, but with more options.
+
+  If `initially` is given, `var` will be bound to it on the first iteration,
+  before proceeding to iterate over the list.
+
+  If `finally` is given, `var` will be bound to it on one more iteration after
+  the end of the list has been reached.
+
+  Examples:
+
+    (iterate (for x :in-list '(1 2 3))
+             (collect x))
+    ; => (1 2 3)
+
+    (iterate (for x :in-list '(1 2 3) :initially 0)
+             (collect x))
+    ; => (0 1 2 3)
+
+    (iterate (for x :in-list '(1 2 3) :finally 4)
+             (collect x))
+    ; => (1 2 3 4)
+
+    (iterate (for x :in-list '(1 2 3) :initially 0 :finally 4)
+             (collect x))
+    ; => (0 1 2 3 4)
+
+  "
+  (let ((kwd (if generate 'generate 'for)))
+    (with-gensyms (l i f done)
+      `(progn
+         (with ,l = ,list)
+         ,@(when initial-value?
+             `((with ,i = ,initial-value)))
+         ,@(when final-value?
+             `((with ,f = ,final-value)
+               (with ,done = nil)))
+         (,kwd ,var :next
+          (cond
+            ,@(when initial-value?
+               `(((first-time-p) ,i)))
+            ,@(when final-value?
+               `((,done (terminate))))
+            ((atom ,l)
+             ,@(if final-value?
+                 `((setf ,done t) ,f)
+                 `((terminate))))
+            (t (prog1 (car ,l) (setf ,l (funcall ,step-function ,l))))))))))
 
 (defmacro-driver (FOR var IN-DIGITS-OF integer &optional RADIX (radix 10))
   "Iterate `var` through the digits of `integer` in base `radix`, low-order first."
