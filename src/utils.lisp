@@ -765,3 +765,9 @@
              (collect (apply function (mapcar #'head lists)))
              (map-into lists #'cdr lists))))
 
+
+(defun phi (n)
+  "Return `φ(n)` (Euler's totient function)."
+  ;; https://en.wikipedia.org/wiki/Euler%27s_totient_function#Computing_Euler.27s_totient_function
+  (* n (iterate (for p :in (prime-factors n))
+                (multiplying (- 1 (/ p))))))

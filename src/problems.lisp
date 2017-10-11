@@ -1604,6 +1604,73 @@
     (iterate (for n :from 1 :below (find-bound))
              (sum (score n)))))
 
+(defun problem-69 ()
+  ;; Euler's Totient function, φ(n) [sometimes called the phi function], is
+  ;; used to determine the number of numbers less than n which are relatively
+  ;; prime to n. For example, as 1, 2, 4, 5, 7, and 8, are all less than nine
+  ;; and relatively prime to nine, φ(9)=6.
+  ;;
+  ;; It can be seen that n=6 produces a maximum n/φ(n) for n ≤ 10.
+  ;;
+  ;; Find the value of n ≤ 1,000,000 for which n/φ(n) is a maximum.
+  (iterate
+    ;; Euler's Totient function is defined to be:
+    ;;
+    ;;   φ(n) = n * Πₓ(1 - 1/x) where x ∈ { prime factors of n }
+    ;;
+    ;; We're looking for the number n that maximizes f(n) = n/φ(n).
+    ;; We can expand this out into:
+    ;;
+    ;;   _n__ = _______n_______ = _____1_____
+    ;;   φ(n)   n * Πₓ(1 - 1/x)   Πₓ(1 - 1/x)
+    ;;
+    ;; We're trying to MAXMIZE this function, which means we're trying to
+    ;; MINIMIZE the denominator: Πₓ(1 - 1/x).
+    ;;
+    ;; Each term in this product is (1 - 1/x), which means that our goals are:
+    ;;
+    ;; 1. Have as many terms as possible in the product, because all terms are
+    ;;    between 0 and 1, and so decrease the total product when multiplied.
+    ;; 2. Prefer smaller values of x, because this minimizes (1 - 1/x), which
+    ;;    minimizes the product as a whole.
+    ;;
+    ;; Note that because we're taking the product over the UNIQUE prime factors
+    ;; of n, and because the n itself has canceled out, all numbers with the
+    ;; same unique prime factorization will have the same value for n/φ(n).
+    ;; For example:
+    ;;
+    ;;   f(2 * 3 * 5) = f(2² * 3⁸ * 5)
+    ;;
+    ;; The problem description implies that there is a single number with the
+    ;; maximum value below 1,000,000, but even if there were multiple answers,
+    ;; it seems reasonable to return the first.  This means that the answer
+    ;; we'll be giving will be square-free, because all the larger, squareful
+    ;; versions of that factorization would have the same value for f(n).
+    ;;
+    ;; Not only is it square-free, it must be the product of the first k primes,
+    ;; for some number k.  To see why, consider two possible square-free
+    ;; numbers:
+    ;;
+    ;;   (p₁ * p₂ * ... * pₓ)
+    ;;   (p₂ * p₃ * ... * pₓ₊₁)
+    ;;
+    ;; We noted above that smaller values would minimize the product in the
+    ;; denominator, thus maximizing the result.  So given two sets of prime
+    ;; factors with the same cardinality, we prefer the one with smaller
+    ;; numbers.
+    ;;
+    ;; We also noted above that we want as many numbers as possible, without
+    ;; exceeding the limit.
+    ;;
+    ;; Together we can use these two notes to conclude that we simply want the
+    ;; product (p₁ * p₂ * ... * pₓ) for as large an x as possible without
+    ;; exceeding the limit!
+    (for p :in-primes t)
+    (for n :initially 1 :then (* n p))
+    (for result :previous n)
+    (while (<= n 1000000))
+    (finally (return result))))
+
 (defun problem-74 ()
   ;; The number 145 is well known for the property that the sum of the factorial
   ;; of its digits is equal to 145:
@@ -2222,6 +2289,7 @@
 (test p61 (is (= 28684 (problem-61))))
 (test p62 (is (= 127035954683 (problem-62))))
 (test p63 (is (= 49 (problem-63))))
+(test p69 (is (= 510510 (problem-69))))
 (test p74 (is (= 402 (problem-74))))
 (test p79 (is (= 73162890 (problem-79))))
 (test p92 (is (= 8581146 (problem-92))))

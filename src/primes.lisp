@@ -27,8 +27,25 @@
              (collect n :result-type vector))))
 
 
-(defun prime-factorization (n)
+(defun prime-factors (n)
   "Return the prime factors of `n`."
+  (let ((result (list)))
+    (iterate (while (evenp n)) ; handle 2, the only even prime factor
+             (if-first-time
+               (push 2 result))
+             (setf n (/ n 2)))
+    (iterate
+      (for i :from 3 :to (sqrt n) :by 2) ; handle odd (prime) divisors
+      (iterate (while (dividesp n i))
+               (if-first-time
+                 (push i result))
+               (setf n (/ n i))))
+    (when (> n 2) ; final check in case we ended up with a prime
+      (push n result))
+    (nreverse result)))
+
+(defun prime-factorization (n)
+  "Return the prime factorization of `n`."
   ;; from http://www.geeksforgeeks.org/print-all-prime-factors-of-a-given-number/
   (let ((result (list)))
     (iterate (while (evenp n)) ; handle 2, the only even prime factor
