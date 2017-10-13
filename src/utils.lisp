@@ -340,9 +340,24 @@
                            i))))
 
 
-(defun factorial (n)
+(defun factorial% (n)
   (iterate (for i :from 1 :to n)
            (multiplying i)))
+
+(defun precompute-factorials (size)
+  (iterate
+    (with cache = (make-array size :element-type 'integer))
+    (for i :from 0 :below size)
+    (setf (aref cache i) (factorial% i))
+    (finally (return cache))))
+
+(defparameter *factorial-cache-size* 2000)
+(defparameter *factorial-cache* (precompute-factorials *factorial-cache-size*))
+
+(defun factorial (n)
+  (if (< n *factorial-cache-size*)
+    (aref *factorial-cache* n)
+    (factorial% n)))
 
 
 (defun perfectp (n)
