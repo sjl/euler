@@ -290,11 +290,20 @@
   (remove n (divisors n)))
 
 (defun count-divisors (n)
-  (+ (* 2 (iterate (for i :from 1 :below (sqrt n))
-                   (counting (dividesp n i))))
-     (if (squarep n)
-       1
-       0)))
+  ;; From *Recreations in the Theory of Numbers: The Queen of Mathematics
+  ;; Entertains* by Albert Beiler.
+  ;;
+  ;; To find the number of divisors of n, we first find its prime factorization:
+  ;;
+  ;;   p₁^k₁ × p₂^k₂ × ... × pₓ^kₓ
+  ;;
+  ;; The divisors of n are each formed by some combination of these numbers.  To
+  ;; find the total number of divisors we take ∏(k+1) for each exponent k in the
+  ;; factorization.  This is because there are k₁+1 options for how many of the
+  ;; first prime to include (because 0 is an option), k₂+1 options for the
+  ;; second prime, etc.
+  (iterate (for (nil . exponent) :in (prime-factorization-pairs n))
+           (multiplying (1+ exponent))))
 
 
 (defmacro-driver (FOR var IN-COLLATZ n)

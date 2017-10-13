@@ -28,7 +28,15 @@
 
 
 (defun prime-factors (n)
-  "Return the prime factors of `n`."
+  "Return the prime factors of `n`.
+
+  The result will be a set of primes.  For example:
+
+    (prime-factors 60)
+    ; =>
+    (2 3 5)
+
+  "
   (let ((result (list)))
     (iterate (while (evenp n)) ; handle 2, the only even prime factor
              (if-first-time
@@ -45,7 +53,15 @@
     (nreverse result)))
 
 (defun prime-factorization (n)
-  "Return the prime factorization of `n`."
+  "Return the prime factorization of `n` as a flat list.
+
+  The result will be a list of primes, with duplicates.  For example:
+
+    (prime-factorization 60)
+    ; =>
+    (2 2 3 5)
+
+  "
   ;; from http://www.geeksforgeeks.org/print-all-prime-factors-of-a-given-number/
   (let ((result (list)))
     (iterate (while (evenp n)) ; handle 2, the only even prime factor
@@ -58,6 +74,33 @@
                (setf n (/ n i))))
     (when (> n 2) ; final check in case we ended up with a prime
       (push n result))
+    (nreverse result)))
+
+(defun prime-factorization-pairs (n)
+  "Return the prime factorization of `n` as a list of prime/exponent conses.
+
+  The result will be a list of `(prime . exponent)` conses.  For example:
+
+    (prime-factorization-pairs 60)
+    ; =>
+    ((2 . 2) (3 . 1) (5 . 1))
+
+  "
+  (let ((result (list)))
+    (iterate (while (evenp n)) ; handle 2, the only even prime factor
+             (if-first-time
+               (push (cons 2 1) result)
+               (incf (cdar result)))
+             (setf n (/ n 2)))
+    (iterate
+      (for i :from 3 :to (sqrt n) :by 2) ; handle odd (prime) divisors
+      (iterate (while (dividesp n i))
+               (if-first-time
+                 (push (cons i 1) result)
+                 (incf (cdar result)))
+               (setf n (/ n i))))
+    (when (> n 2) ; final check in case we ended up with a prime
+      (push (cons n 1) result))
     (nreverse result)))
 
 

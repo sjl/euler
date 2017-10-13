@@ -2084,6 +2084,57 @@
       (for (row . col) :in (euler.hungarian:find-minimal-assignment matrix))
       (summing (- (aref matrix row col))))))
 
+(defun problem-346 ()
+  ;; The number 7 is special, because 7 is 111 written in base 2, and 11 written
+  ;; in base 6 (i.e. 7_10 = 11_6 = 111_2). In other words, 7 is a repunit in at
+  ;; least two bases b > 1.
+  ;;
+  ;; We shall call a positive integer with this property a strong repunit. It
+  ;; can be verified that there are 8 strong repunits below 50:
+  ;; {1,7,13,15,21,31,40,43}.  Furthermore, the sum of all strong repunits below
+  ;; 1000 equals 15864.
+  ;;
+  ;; Find the sum of all strong repunits below 10^12.
+  (iterate
+    ;; Let's start with a few observations.  First, 1 is a repunit in ALL bases,
+    ;; and 2 isn't a repunit in any base.
+    ;;
+    ;; Next, EVERY number `n` greater than 2 is a repunit in base `n - 1`,
+    ;; because it will be `11` in that base.  So every number already fulfills
+    ;; half the requirements of the problem.  This means we only need to find
+    ;; and sum all the numbers are repunits in at least one more base, and
+    ;; they'll be of the form `11[1]+` in that base.
+    ;;
+    ;; Instead of iterating through each number trying to search for a base that
+    ;; it happens to be a repunit in, it's faster if we iterate through the
+    ;; possible BASES instead and generate all their repunits below the limit.
+    ;; Observe how new repunits can be iteratively formed for a given base `b`:
+    ;;
+    ;;   R₁ = 1    = 1
+    ;;   R₂ = 11   = 1 + b¹
+    ;;   R₃ = 111  = 1 + b¹ + b²
+    ;;   R₄ = 1111 = 1 + b¹ + b² + b³
+    ;;   ...
+    ;;
+    ;; We can use a set to store the results to avoid overcounting numbers that
+    ;; are repunits in more than two bases.
+    (with limit = (expt 10 12))
+    (with strong-repunits = (make-hash-set :initial-contents '(1)))
+    (for base :from 2 :to (sqrt limit))
+    (iterate
+      ;; To check a particular base we'll start at number 111 in that base,
+      ;; because we've already accounted for 1 and 11 in our previous
+      ;; assumptions.
+      ;;
+      ;; This is why we only iterate up to √b in the outer loop: the first
+      ;; number we're going to be checking is `111 = 1 + b¹ + b²`, and so any
+      ;; base higher than √b would immediately exceed the limit.  We could
+      ;; probably narrow the range a bit further, but it's plenty fast already.
+      (for n :first (+ 1 base (expt base 2)) :then (+ 1 (* base n)))
+      (while (< n limit))
+      (hset-insert! strong-repunits n))
+    (finally (return (hset-reduce strong-repunits #'+)))))
+
 (defun problem-357 ()
   ;; Consider the divisors of 30: 1,2,3,5,6,10,15,30.  It can be seen that for
   ;; every divisor d of 30, d+30/d is prime.
@@ -2301,6 +2352,7 @@
 (test p315 (is (= 13625242 (problem-315))))
 (test p323 (is (= 6.3551758451d0 (problem-323))))
 (test p345 (is (= 13938 (problem-345))))
+(test p346 (is (= 336108797689259276 (problem-346))))
 (test p357 (is (= 1739023853137 (problem-357))))
 (test p387 (is (= 696067597313468 (problem-387))))
 
