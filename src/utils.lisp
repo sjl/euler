@@ -269,27 +269,25 @@
   (sort sequence #'<))
 
 
-(defun unsorted-divisors (n)
-  (iterate (for i :from 1 :to (sqrt n))
-           (for (values divisor remainder) = (truncate n i))
-           (when (zerop remainder)
-             (collect i)
-             ;; don't collect the square root twice
-             (unless (= i divisor)
-               (collect divisor)))))
-
 (defun-inlineable divisors-up-to-square-root (n)
   (loop :for i :from 1 :to (floor (sqrt n))
         :when (zerop (rem n i))
         :collect i))
 
-(defun divisors (n)
-  (sort< (unsorted-divisors n)))
 
-(defun proper-divisors (n)
-  (remove n (divisors n)))
+(defun unsorted-divisors (n &key proper)
+  (iterate (for i :from 1 :to (sqrt n))
+           (for (values divisor remainder) = (truncate n i))
+           (when (zerop remainder)
+             (collect i)
+             (unless (or (= i divisor) ;; don't collect the square root twice
+                         (and proper (= i 1))) ;; don't collect n if proper
+               (collect divisor)))))
 
-(defun count-divisors (n)
+(defun divisors (n &key proper)
+  (sort< (unsorted-divisors n :proper proper)))
+
+(defun count-divisors (n &key proper)
   ;; From *Recreations in the Theory of Numbers: The Queen of Mathematics
   ;; Entertains* by Albert Beiler.
   ;;
@@ -302,8 +300,29 @@
   ;; factorization.  This is because there are k₁+1 options for how many of the
   ;; first prime to include (because 0 is an option), k₂+1 options for the
   ;; second prime, etc.
-  (iterate (for (nil . exponent) :in (prime-factorization-pairs n))
-           (multiplying (1+ exponent))))
+  (- (iterate (for (nil . exponent) :in (prime-factorization-pairs n))
+              (multiplying (1+ exponent)))
+     (if proper 1 0)))
+
+(defun sum-of-divisors (n &key proper)
+  "Return the sum of the divisors of `n`.
+
+  If `proper` is given, only include the proper divisors (i.e. not `n` itself).
+
+  "
+  (sum (divisors n :proper proper)))
+
+(defun product-of-divisors (n &key proper)
+  ;; From *Recreations in the Theory of Numbers: The Queen of Mathematics
+  ;; Entertains* by Albert Beiler.
+  ;;
+  ;; If `N` is a positive integer with `d` divisors, the product of all the
+  ;; divisors of `N` is `N^(d/2)`.
+  ;;
+  ;; If we only want the product of the proper divisors, just divide `N` back
+  ;; out at the end.
+  (/ (expt n (/ (count-divisors n) 2))
+     (if proper n 1)))
 
 
 (defmacro-driver (FOR var IN-COLLATZ n)
@@ -370,13 +389,13 @@
 
 
 (defun perfectp (n)
-  (= n (sum (proper-divisors n))))
+  (= n (sum-of-divisors n :proper t)))
 
 (defun abundantp (n)
-  (< n (sum (proper-divisors n))))
+  (< n (sum-of-divisors n :proper t)))
 
 (defun deficientp (n)
-  (> n (sum (proper-divisors n))))
+  (> n (sum-of-divisors n :proper t)))
 
 
 (defun multiplicative-order (integer modulus)

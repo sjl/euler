@@ -76,10 +76,13 @@
       (push n result))
     (nreverse result)))
 
-(defun prime-factorization-pairs (n)
+(defun prime-factorization-pairs (n &key include-zeros)
   "Return the prime factorization of `n` as a list of prime/exponent conses.
 
-  The result will be a list of `(prime . exponent)` conses.  For example:
+  The result will be a list of `(prime . exponent)` conses.  If `include-zeros`
+  is given, even primes whose exponent turns out to be zero will be included.
+
+  For example:
 
     (prime-factorization-pairs 60)
     ; =>
@@ -88,6 +91,8 @@
   "
   (let ((result (list)))
     (iterate (while (evenp n)) ; handle 2, the only even prime factor
+             (else (when include-zeros
+                     (push (cons 2 0) result)))
              (if-first-time
                (push (cons 2 1) result)
                (incf (cdar result)))
@@ -95,6 +100,8 @@
     (iterate
       (for i :from 3 :to (sqrt n) :by 2) ; handle odd (prime) divisors
       (iterate (while (dividesp n i))
+               (else (when (and include-zeros (primep i))
+                       (push (cons i 0) result)))
                (if-first-time
                  (push (cons i 1) result)
                  (incf (cdar result)))

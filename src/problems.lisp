@@ -452,12 +452,10 @@
   ;; 71 and 142; so d(284) = 220.
   ;;
   ;; Evaluate the sum of all the amicable numbers under 10000.
-  (labels ((sum-of-divisors (n)
-             (sum (proper-divisors n)))
-           (amicablep (n)
-             (let ((other (sum-of-divisors n)))
-               (and (not= n other)
-                    (= n (sum-of-divisors other))))))
+  (flet ((amicablep (n)
+           (let ((other (sum-of-divisors n :proper t)))
+             (and (not= n other)
+                  (= n (sum-of-divisors other :proper t))))))
     (sum (remove-if-not #'amicablep (range 1 10000)))))
 
 (defun problem-22 ()
