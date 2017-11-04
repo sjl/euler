@@ -276,13 +276,15 @@
 
 
 (defun unsorted-divisors (n &key proper)
-  (iterate (for i :from 1 :to (sqrt n))
-           (for (values divisor remainder) = (truncate n i))
-           (when (zerop remainder)
-             (collect i)
-             (unless (or (= i divisor) ;; don't collect the square root twice
-                         (and proper (= i 1))) ;; don't collect n if proper
-               (collect divisor)))))
+  (if (= n 1)
+    nil
+    (iterate (for i :from 1 :to (sqrt n))
+             (for (values divisor remainder) = (truncate n i))
+             (when (zerop remainder)
+               (collect i)
+               (unless (or (= i divisor) ;; don't collect the square root twice
+                           (and proper (= i 1))) ;; don't collect n if proper
+                 (collect divisor))))))
 
 (defun divisors (n &key proper)
   (sort< (unsorted-divisors n :proper proper)))
@@ -310,7 +312,7 @@
   If `proper` is given, only include the proper divisors (i.e. not `n` itself).
 
   "
-  (sum (divisors n :proper proper)))
+  (sum (unsorted-divisors n :proper proper)))
 
 (defun product-of-divisors (n &key proper)
   ;; From *Recreations in the Theory of Numbers: The Queen of Mathematics
@@ -396,6 +398,76 @@
 
 (defun deficientp (n)
   (> n (sum-of-divisors n :proper t)))
+
+(defun amicablep (m &optional n)
+  "Return whether `m` and `n` are amicable numbers.
+
+  If `n` is omitted the sum of the aliquot divisors of `m` will be used, and
+  thus this function will return whether `m` is part of an amicable pair.
+
+  "
+  (nest (let ((sm (sum-of-divisors m :proper t))))
+        (let ((n (or n sm))))
+        (unless (= m n))
+        (let ((sn (sum-of-divisors n :proper t))))
+        (and (= m sn)
+             (= n sm))))
+
+(defun amicable-number-chain (n &optional (cutoff 50))
+  "Return the amicable number chain of `n`, or `nil` if it is not part of one.
+
+  If `cutoff` is given, stop searching (and return `nil`) after that many steps.
+
+  Returns two values:
+
+  * The chain (if any)
+  * A boolean specifying whether the computation was aborted by hitting the cutoff.
+
+  "
+  ;; Perfection, amicability, and sociability are all special cases of this:
+  ;;
+  ;;   (defun perfectp  (n) (= 1 (length (amicable-number-chain n))))
+  ;;   (defun amicablep (n) (= 2 (length (amicable-number-chain n))))
+  ;;   (defun sociablep (n) (> 2 (length (amicable-number-chain n))))
+  (iterate
+    (for number :iterating (rcurry #'sum-of-divisors :proper t) :seed n)
+    (for i :from 0)
+    (cond ((and cutoff (= cutoff i))
+           (return (values nil t)))
+
+          ((or (= number 1) (member number result))
+           (return (values nil nil)))
+
+          ((= number n)
+           (return (values (cons number result) nil)))
+
+          (t (collect number :into result)))))
+
+(defun aliquot-sequence (n &optional (cutoff 50))
+  "Return the aliquot sequence starting with `n`.
+
+  The sequence will end when any of the following occur:
+
+  * The sequence hits zero.
+  * The sequence encounters a cycle.
+  * `cutoff` steps have been given.
+
+  Returns two values:
+
+  * The sequence.
+  * A boolean specifying whether the cutoff was hit.
+
+  "
+  ;; https://en.wikipedia.org/wiki/Aliquot_sequence
+  (iterate
+    (for number :iterating (rcurry #'sum-of-divisors :proper t)
+         :seed n :include-seed t)
+    (for i :from 0)
+    (cond ((and cutoff (= cutoff i)) (return (values result t)))
+          ((member number result) (return (values result nil)))
+          (t (collect number :into result)))
+    (when (zerop number)
+      (return (values result nil)))))
 
 
 (defun multiplicative-order (integer modulus)
@@ -814,3 +886,4 @@
   ;; https://en.wikipedia.org/wiki/Euler%27s_totient_function#Computing_Euler.27s_totient_function
   (* n (iterate (for p :in (prime-factors n))
                 (multiplying (- 1 (/ p))))))
+
