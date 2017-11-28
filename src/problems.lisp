@@ -599,7 +599,8 @@
   ;; starting with n=0.
   (flet ((primes-produced (a b)
            (iterate (for n :from 0)
-                    (while (primep (+ (square n) (* a n) b)))
+                    (while (primep
+                             (math n ^ 2 + a n + b)))
                     (counting t))))
     (iterate (for-nested ((a :from -999 :to 999)
                           (b :from -1000 :to 1000)))
@@ -787,8 +788,7 @@
   (labels ((rotate (n distance)
              (multiple-value-bind (hi lo)
                  (truncate n (expt 10 distance))
-               (+ (* (expt 10 (digits-length hi)) lo)
-                  hi)))
+               (math lo * 10 ^ #(digits-length hi) + hi)))
            (rotations (n)
              (mapcar (curry #'rotate n) (range 1 (digits-length n))))
            (circular-prime-p (n)

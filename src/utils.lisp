@@ -366,8 +366,7 @@
   "Return `n` choose `k`."
   ;; https://en.wikipedia.org/wiki/Binomial_coefficient#Multiplicative_formula
   (iterate (for i :from 1 :to k)
-           (multiplying (/ (+ n 1 (- i))
-                           i))))
+           (multiplying (math (n + 1 - i) / i))))
 
 
 (defun factorial% (n)
@@ -575,8 +574,7 @@
 
 
 (defun pythagorean-triplet-p (a b c)
-  (= (+ (square a) (square b))
-     (square c)))
+  (math a ^ 2 + b ^ 2 = c ^ 2))
 
 (defun pythagorean-triplets-of-perimeter (p)
   (iterate
@@ -644,7 +642,7 @@
 
 (defun triangle (n)
   "Return the `n`th triangle number (1-indexed because mathematicians are silly)."
-  (* 1/2 n (1+ n)))
+  (math n (n + 1) / 2))
 
 (defun trianglep (n)
   "Return whether `n` is a triangle number."
@@ -657,16 +655,18 @@
 
 
 (defun pentagon (n)
+  (math (3 n ^ 2 - n) / 2)
   (* n (- (* 3 n) 1) 1/2))
 
 (defun pentagonp (n)
   ;; We can ignore the - branch of the quadratic equation because negative
   ;; numbers aren't indexes.
-  (dividesp (+ 1 (sqrt (1+ (* 24.0d0 n)))) 6))
+  (dividesp (math (sqrt (24.0d0 n + 1) + 1))
+            6))
 
 
 (defun hexagon (n)
-  (* n (1- (* 2 n))))
+  (math (2 n - 1) * n))
 
 (defun hexagonp (n)
   ;; We can ignore the - branch of the quadratic equation because negative
@@ -675,10 +675,11 @@
 
 
 (defun heptagon (n)
-  (* n (- (* 5 n) 3) 1/2))
+  (math (5 n ^ 2 - 3 n) / 2))
+
 
 (defun octagon (n)
-  (* n (- (* 3 n) 2)))
+  (math 3 n ^ 2 - 2 n))
 
 
 (defun parse-strings-file (filename)

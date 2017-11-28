@@ -27,6 +27,7 @@
                (:file "package")
                (:module "src" :serial t
                 :components ((:file "primes")
+                             (:file "math")
                              (:file "utils")
                              (:file "hungarian")
                              (:file "problems")
