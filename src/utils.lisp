@@ -239,19 +239,6 @@
     (string= s (reverse s))))
 
 
-(defun-inlineable sum (sequence &key key)
-  (iterate (for n :in-whatever sequence)
-           (sum (if key
-                  (funcall key n)
-                  n))))
-
-(defun-inlineable product (sequence &key key)
-  (iterate (for n :in-whatever sequence)
-           (multiplying (if key
-                          (funcall key n)
-                          n))))
-
-
 (defun-inlineable mutate (function list)
   "Destructively mutate each element of `list` in-place with `function`.
 
@@ -312,7 +299,7 @@
   If `proper` is given, only include the proper divisors (i.e. not `n` itself).
 
   "
-  (sum (unsorted-divisors n :proper proper)))
+  (summation (unsorted-divisors n :proper proper)))
 
 (defun product-of-divisors (n &key proper)
   ;; From *Recreations in the Theory of Numbers: The Queen of Mathematics

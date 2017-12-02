@@ -5,7 +5,8 @@
     :losh
     :euler.quickutils)
   (:import-from :1am :is)
-  (:shadowing-import-from :1am :test))
+  (:shadowing-import-from :1am :test)
+  (:export :run-tests))
 
 (defpackage :euler.poker
   (:use
