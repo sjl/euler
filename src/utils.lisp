@@ -1,5 +1,6 @@
 (in-package :euler)
 
+;;;; Iterate ------------------------------------------------------------------
 (defmacro-driver (FOR var ITERATING function SEED value &optional
                   INCLUDE-SEED include-seed?)
   "Iterate `var` over the series `(f seed), (f (f seed)), (f (f (f seed))), ...`.
@@ -134,12 +135,37 @@
                               ,digit)))))))
 
 (defmacro-driver (FOR var IN-CSV-FILE filename &optional
-                  KEY (key #'identity) DELIMITER (delimiter #\,))
+                  KEY (key #'identity)
+                  DELIMITER (delimiter #\,)
+                  RESULT-TYPE (result-type ''list)
+                  SKIP-HEADER (skip-header nil)
+                  OMIT-EMPTY (omit-empty nil))
   (let ((kwd (if generate 'generate 'for)))
-    (with-gensyms (line)
+    (with-gensyms (line% key% delimiter% result-type% omit-empty% skip-header%)
       `(progn
-         (generate ,line :in-file ,filename :using #'read-line)
-         (,kwd ,var :next (mapcar ,key (cl-strings:split (next ,line) ,delimiter)))))))
+         (with ,key% = ,key)
+         (with ,delimiter% = ,delimiter)
+         (with ,result-type% = ,result-type)
+         (with ,omit-empty% = ,omit-empty)
+         (with ,skip-header% = ,skip-header)
+         (generate ,line% :in-file ,filename :using #'read-line)
+         (labels ((skip-empty ()
+                    (when ,omit-empty%
+                      (loop :while (string= "" ,line%) :do (next ,line%))))
+                  (skip-header ()
+                    (when ,skip-header%
+                      (next ,line%)
+                      (setf ,skip-header% nil)
+                      (skip-empty)))
+                  (next-line ()
+                    (next ,line%)
+                    (skip-empty)
+                    (skip-header)
+                    ,line%)
+                  (parse-line (l)
+                    (map ,result-type% ,key%
+                         (cl-strings:split l ,delimiter%))))
+           (,kwd ,var :next (parse-line (next-line))))))))
 
 
 (defmacro when-first-time (&body body)
@@ -152,6 +178,170 @@
      (progn ,@body)))
 
 
+;;;; Miscellaneous ------------------------------------------------------------
+(defun-inlineable mutate (function list)
+  "Destructively mutate each element of `list` in-place with `function`.
+
+  Equivalent to (but can be faster than) `(map-into list function list)`.
+
+  "
+  (declare (optimize speed))
+  (loop :with function = (ensure-function function)
+        :for l :on list
+        :do (setf (car l) (funcall function (car l))))
+  list)
+
+(defun sort< (sequence)
+  (sort sequence #'<))
+
+(defun binomial-coefficient (n k)
+  "Return `n` choose `k`."
+  ;; https://en.wikipedia.org/wiki/Binomial_coefficient#Multiplicative_formula
+  (iterate (for i :from 1 :to k)
+           (multiplying (math (n + 1 - i) / i))))
+
+(defun multiplicative-order (integer modulus)
+  "Return the multiplicative order of `integer` modulo `modulus`."
+  ;; https://en.wikipedia.org/wiki/Multiplicative_order
+  (iterate (for i :from 1)
+           (for v :first integer :then (* v integer))
+           (finding i :such-that (= 1 (mod v modulus)))))
+
+(defun number-spiral-corners (size)
+  "Return a list of the corner values of a 'number spiral' of size `size`.
+
+  `size` must be odd.  The order of the corners in the resulting list is
+  unspecified.
+
+  Note that the \"spiral\" of size one has just a single \"corner\": `1`.
+
+  "
+  (assert (oddp size))
+  (if (= 1 size)
+    (list 1)
+    (let ((leg (1- size))
+          (final (square size)))
+      (list (- final (* 0 leg))
+            (- final (* 1 leg))
+            (- final (* 2 leg))
+            (- final (* 3 leg))))))
+
+(defun mapcar-long (function fill list &rest more-lists)
+  "Like `mapcar`, but using the longest list, filling with `fill`."
+  (declare (optimize speed))
+  (flet ((head (list)
+           (if (null list) fill (car list))))
+    (iterate (with (the cons lists) = (cons list more-lists))
+             (with function = (ensure-function function))
+             (until (every #'null lists))
+             (collect (apply function (mapcar #'head lists)))
+             (map-into lists #'cdr lists))))
+
+(defun phi (n)
+  "Return `φ(n)` (Euler's totient function)."
+  ;; https://en.wikipedia.org/wiki/Euler%27s_totient_function#Computing_Euler.27s_totient_function
+  (* n (iterate (for p :in (prime-factors n))
+                (multiplying (- 1 (/ p))))))
+
+(defun parse-strings-file (filename)
+  (-<> filename
+    read-file-into-string
+    (substitute #\Space #\, <>)
+    read-all-from-string))
+
+(defun letter-number (char)
+  "Return the index of `char` in the alphabet (A being 1)."
+  (1+ (- (char-code (char-upcase char)) (char-code #\A))))
+
+(defun set-equal (list1 list2 &rest args)
+  (null (apply #'set-exclusive-or list1 list2 args)))
+
+(defun orderless-equal (list1 list2 &key (sort-predicate #'<))
+  (equal (sort (copy-seq list1) sort-predicate)
+         (sort (copy-seq list2) sort-predicate)))
+
+(defun irange (start end &key (step 1) (key 'identity))
+  "Inclusive `range`."
+  (range start (1+ end) :step step :key key))
+
+(defun length= (n sequence)
+  (= n (length sequence)))
+
+(defmacro labels-memoized (definitions &body body)
+  (let ((caches (mapcar #'gensym (range 0 (length definitions)))))
+    (flet ((build (cache definition)
+             (destructuring-bind (name lambda-list &body body) definition
+               `(,name ,lambda-list
+                 (values
+                   (ensure-gethash (list ,@lambda-list) ,cache
+                                   (progn ,@body)))))))
+      `(let (,@(iterate (for cache :in caches)
+                        (collect `(,cache (make-hash-table :test #'equal)))))
+         (labels (,@(mapcar #'build caches definitions))
+           ,@body)))))
+
+(defun subsequencep (needles haystack &key key (test #'eql))
+  "Return whether `needles` is a (possibly non-contiguous) subsequence of `haystack`."
+  (ctypecase haystack
+    (list
+      (every (lambda (el)
+               (let ((result (member el haystack :key key :test test)))
+                 (setf haystack (rest result))
+                 result))
+             needles))
+    (sequence
+      (let ((p 0))
+        (every (lambda (el)
+                 (setf p (position el haystack :start p :key key :test test)))
+               needles)))))
+
+(defun convert-to-multidimensional-array (nested-sequences)
+  "Convert nested sequences into a single multidimensional array.
+
+  All sequences for a given dimension must have the same length.  This is not
+  checked.
+
+  "
+  (let* ((dimensions (gathering
+                       (recursively ((s nested-sequences))
+                         (when (typep s 'sequence)
+                           (gather (length s))
+                           (recur (elt s 0))))))
+         (array (make-array dimensions))
+         (i 0))
+    (recursively ((s nested-sequences))
+      (if (typep s 'sequence)
+        (map nil #'recur s)
+        (setf (row-major-aref array i) s
+              i (1+ i))))
+    array))
+
+(defun barycentric (a b c point)
+  "Return the barycentric coords of `point` with respect to the triangle `abc`.
+
+  `a`, `b`, `c`, and `point` must be `vec2`s.
+
+  The resulting `u`, `v`, and `w` barycentric coordinates will be returned as
+  three values.
+
+  "
+  ;; https://gamedev.stackexchange.com/a/23745
+  (let* ((v0 (vec2- b a))
+         (v1 (vec2- c a))
+         (v2 (vec2- point a))
+         (d00 (vec2-dot v0 v0))
+         (d01 (vec2-dot v0 v1))
+         (d11 (vec2-dot v1 v1))
+         (d20 (vec2-dot v2 v0))
+         (d21 (vec2-dot v2 v1))
+         (denom (- (* d00 d11) (* d01 d01)))
+         (v (/ (- (* d11 d20) (* d01 d21)) denom))
+         (w (/ (- (* d00 d21) (* d01 d20)) denom))
+         (u (- 1 v w)))
+    (values u v w)))
+
+
+;;;; Digits -------------------------------------------------------------------
 (defun digits-length (n &optional (radix 10))
   "Return how many digits `n` has in base `radix`."
   (if (zerop n)
@@ -239,23 +429,36 @@
     (string= s (reverse s))))
 
 
-(defun-inlineable mutate (function list)
-  "Destructively mutate each element of `list` in-place with `function`.
+(defun pandigitalp (integer &key (start 1) (end 9))
+  "Return whether `integer` is `start` to `end` (inclusive) pandigital.
 
-  Equivalent to (but can be faster than) `(map-into list function list)`.
+  Examples:
+
+    (pandigitalp 123)     ; => nil
+    (pandigitalp 123 1 3) ; => t
+    (pandigitalp 123 0 3) ; => nil
 
   "
-  (declare (optimize speed))
-  (loop :with function = (ensure-function function)
-        :for l :on list
-        :do (setf (car l) (funcall function (car l))))
-  list)
+  (equal (irange start end)
+         (sort< (digits integer))))
+
+(defun pandigitals (&optional (start 1) (end 9))
+  "Return a list of all `start` to `end` (inclusive) pandigital numbers."
+  (gathering
+    (map-permutations (lambda (digits)
+                        ;; 0-to-n pandigitals are annoying because we don't want
+                        ;; to include those with a 0 first.
+                        (unless (zerop (first digits))
+                          (gather (digits-to-number digits))))
+                      (irange start end)
+                      :copy nil)))
 
 
-(defun sort< (sequence)
-  (sort sequence #'<))
+(defun reverse-integer (n)
+  (digits-to-number (nreverse (digits n))))
 
 
+;;;; Divisors -----------------------------------------------------------------
 (defun-inlineable divisors-up-to-square-root (n)
   (loop :for i :from 1 :to (floor (sqrt n))
         :when (zerop (rem n i))
@@ -314,6 +517,7 @@
      (if proper n 1)))
 
 
+;;;; Collatz ------------------------------------------------------------------
 (defmacro-driver (FOR var IN-COLLATZ n)
   (let ((kwd (if generate 'generate 'for)))
     `(progn
@@ -331,6 +535,7 @@
            (counting t)))
 
 
+;;;; Fibonacci ----------------------------------------------------------------
 (defmacro-driver (FOR var IN-FIBONACCI _)
   (declare (ignore _))
   (with-gensyms (a b)
@@ -349,13 +554,7 @@
            (collect i)))
 
 
-(defun binomial-coefficient (n k)
-  "Return `n` choose `k`."
-  ;; https://en.wikipedia.org/wiki/Binomial_coefficient#Multiplicative_formula
-  (iterate (for i :from 1 :to k)
-           (multiplying (math (n + 1 - i) / i))))
-
-
+;;;; Factorial ----------------------------------------------------------------
 (defun factorial% (n)
   (iterate (for i :from 1 :to n)
            (multiplying i)))
@@ -376,6 +575,7 @@
     (factorial% n)))
 
 
+;;;; Amicability --------------------------------------------------------------
 (defun perfectp (n)
   (= n (sum-of-divisors n :proper t)))
 
@@ -456,34 +656,7 @@
       (return (values result nil)))))
 
 
-(defun multiplicative-order (integer modulus)
-  "Return the multiplicative order of `integer` modulo `modulus`."
-  ;; https://en.wikipedia.org/wiki/Multiplicative_order
-  (iterate (for i :from 1)
-           (for v :first integer :then (* v integer))
-           (finding i :such-that (= 1 (mod v modulus)))))
-
-
-(defun number-spiral-corners (size)
-  "Return a list of the corner values of a 'number spiral' of size `size`.
-
-  `size` must be odd.  The order of the corners in the resulting list is
-  unspecified.
-
-  Note that the \"spiral\" of size one has just a single \"corner\": `1`.
-
-  "
-  (assert (oddp size))
-  (if (= 1 size)
-    (list 1)
-    (let ((leg (1- size))
-          (final (square size)))
-      (list (- final (* 0 leg))
-            (- final (* 1 leg))
-            (- final (* 2 leg))
-            (- final (* 3 leg))))))
-
-
+;;;; Chopping/Concating Numbers -----------------------------------------------
 (defun-inline truncate-number-left (n amount &optional (radix 10))
   "Chop `amount` digits off the left side of `n` in base `radix`."
   (mod n (expt radix (- (digits-length n radix) amount))))
@@ -499,45 +672,12 @@
             (format nil "~{~D~}" integers))))
 
 
-(defun pandigitalp (integer &key (start 1) (end 9))
-  "Return whether `integer` is `start` to `end` (inclusive) pandigital.
-
-  Examples:
-
-    (pandigitalp 123)     ; => nil
-    (pandigitalp 123 1 3) ; => t
-    (pandigitalp 123 0 3) ; => nil
-
-  "
-  (equal (irange start end)
-         (sort< (digits integer))))
-
-(defun pandigitals (&optional (start 1) (end 9))
-  "Return a list of all `start` to `end` (inclusive) pandigital numbers."
-  (gathering
-    (map-permutations (lambda (digits)
-                        ;; 0-to-n pandigitals are annoying because we don't want
-                        ;; to include those with a 0 first.
-                        (unless (zerop (first digits))
-                          (gather (digits-to-number digits))))
-                      (irange start end)
-                      :copy nil)))
-
-
+;;;; Permutations and Combinations --------------------------------------------
 (defun permutations (sequence &key length)
   (gathering (map-permutations #'gather sequence :length length)))
 
 (defun combinations (sequence &key length)
   (gathering (map-combinations #'gather sequence :length length)))
-
-
-(defun-inline digits< (n digits)
-  "Return whether `n` has fewer than `digits` digits."
-  (< (abs n) (expt 10 (1- digits))))
-
-(defun-inline digits<= (n digits)
-  "Return whether `n` has `digits` or fewer digits."
-  (< (abs n) (expt 10 digits)))
 
 
 (defun adjoin% (list item &rest keyword-args)
@@ -595,6 +735,7 @@
         (recur (mv* d triple))))))
 
 
+;;;; Geometric Numbers --------------------------------------------------------
 (defun squarep (n)
   "Return whether `n` is a perfect square."
   (and (integerp n)
@@ -669,69 +810,7 @@
   (math 3 n ^ 2 - 2 n))
 
 
-(defun parse-strings-file (filename)
-  (-<> filename
-    read-file-into-string
-    (substitute #\Space #\, <>)
-    read-all-from-string))
-
-
-(defun letter-number (char)
-  "Return the index of `char` in the alphabet (A being 1)."
-  (1+ (- (char-code (char-upcase char)) (char-code #\A))))
-
-
-(defun set-equal (list1 list2 &rest args)
-  (null (apply #'set-exclusive-or list1 list2 args)))
-
-(defun orderless-equal (list1 list2 &key (sort-predicate #'<))
-  (equal (sort (copy-seq list1) sort-predicate)
-         (sort (copy-seq list2) sort-predicate)))
-
-
-(defun irange (start end &key (step 1) (key 'identity))
-  "Inclusive `range`."
-  (range start (1+ end) :step step :key key))
-
-
-(defun length= (n sequence)
-  (= n (length sequence)))
-
-
-(defun reverse-integer (n)
-  (digits-to-number (nreverse (digits n))))
-
-
-(defmacro labels-memoized (definitions &body body)
-  (let ((caches (mapcar #'gensym (range 0 (length definitions)))))
-    (flet ((build (cache definition)
-             (destructuring-bind (name lambda-list &body body) definition
-               `(,name ,lambda-list
-                 (values
-                   (ensure-gethash (list ,@lambda-list) ,cache
-                                   (progn ,@body)))))))
-      `(let (,@(iterate (for cache :in caches)
-                        (collect `(,cache (make-hash-table :test #'equal)))))
-         (labels (,@(mapcar #'build caches definitions))
-           ,@body)))))
-
-
-(defun subsequencep (needles haystack &key key (test #'eql))
-  "Return whether `needles` is a (possibly non-contiguous) subsequence of `haystack`."
-  (ctypecase haystack
-    (list
-      (every (lambda (el)
-               (let ((result (member el haystack :key key :test test)))
-                 (setf haystack (rest result))
-                 result))
-             needles))
-    (sequence
-      (let ((p 0))
-        (every (lambda (el)
-                 (setf p (position el haystack :start p :key key :test test)))
-               needles)))))
-
-
+;;;; Matrices -----------------------------------------------------------------
 (deftype matrix (&optional (element-type '*))
   `(array ,element-type (* *)))
 
@@ -770,6 +849,7 @@
            (finally (return result))))
 
 
+;;;; Probability --------------------------------------------------------------
 (defun geometric-pmf (success-probability trials)
   "The probability mass function of the geometric distribution.
 
@@ -790,6 +870,7 @@
   (- 1 (expt (- 1 success-probability) trials)))
 
 
+;;;; Rounding -----------------------------------------------------------------
 (defun round-decimal (number decimal-places &optional (rounder #'round))
   ;; http://www.codecodex.com/wiki/Round_a_number_to_a_specific_decimal_place#Common_Lisp
   (coerce (let ((div (expt 10 decimal-places)))
@@ -810,6 +891,7 @@
   (* precision (round number precision)))
 
 
+;;;; Yet Another Vec2 Implementation™ -----------------------------------------
 (defun vec2 (x y)
   (vector x y))
 
@@ -831,47 +913,83 @@
   (+ (* (vx a) (vx b))
      (* (vy a) (vy b))))
 
+(defun vec2= (a b)
+  (and (= (vx a) (vx b))
+       (= (vy a) (vy b))))
 
-(defun barycentric (a b c point)
-  "Return the barycentric coords of `point` with respect to the triangle `abc`.
 
-  `a`, `b`, `c`, and `point` must be `vec2`s.
+;;;; A* Search ----------------------------------------------------------------
+(defstruct path
+  state
+  estimate
+  (cost 0)
+  (previous nil))
 
-  The resulting `u`, `v`, and `w` barycentric coordinates will be returned as
-  three values.
+(defun path-to-list (path &aux result)
+  (recursively ((path path))
+    (unless (null path)
+      (push (path-state path) result)
+      (recur (path-previous path))))
+  result)
+
+(defun astar (&key start neighbors goal-p cost heuristic test)
+  "Search for a path from `start` to a goal using A★.
+
+  The following parameters are all required:
+
+  * `start`: the starting state.
+
+  * `neighbors`: a function that takes a state and returns all states reachable
+    from it.
+
+  * `goal-p`: a predicate that takes a state and returns whether it is a goal.
+
+  * `cost`: a function that takes two states `a` and `b` and returns the cost
+    to move from `a` to `b`.
+
+  * `heuristic`: a function that takes a state and estimates the distance
+    remaining to the goal.
+
+  * `test`: an equality predicate for comparing nodes.  It must be suitable for
+    passing to `make-hash-table`.
+
+  If the heuristic function is admissable (i.e. it never overestimates the
+  remaining distance) the algorithm will find the shortest path.
+
+  Note that `test` is required.  The only sensible default would be `eql`, but
+  if you were using states that need a different predicate and forgot to pass it
+  the algorithm would end up blowing the heap, which is unpleasant.
 
   "
-  ;; https://gamedev.stackexchange.com/a/23745
-  (let* ((v0 (vec2- b a))
-         (v1 (vec2- c a))
-         (v2 (vec2- point a))
-         (d00 (vec2-dot v0 v0))
-         (d01 (vec2-dot v0 v1))
-         (d11 (vec2-dot v1 v1))
-         (d20 (vec2-dot v2 v0))
-         (d21 (vec2-dot v2 v1))
-         (denom (- (* d00 d11) (* d01 d01)))
-         (v (/ (- (* d11 d20) (* d01 d21)) denom))
-         (w (/ (- (* d00 d21) (* d01 d20)) denom))
-         (u (- 1 v w)))
-    (values u v w)))
+  (iterate
+    (with seen = (make-hash-table :test test))
+    (with frontier = (pileup:make-heap #'< :key #'path-estimate))
 
+    (initially (pileup:heap-insert (make-path :state start :estimate 0) frontier)
+               (setf (gethash start seen) 0))
 
-(defun mapcar-long (function fill list &rest more-lists)
-  "Like `mapcar`, but using the longest list, filling with `fill`."
-  (declare (optimize speed))
-  (flet ((head (list)
-           (if (null list) fill (car list))))
-    (iterate (with (the cons lists) = (cons list more-lists))
-             (with function = (ensure-function function))
-             (until (every #'null lists))
-             (collect (apply function (mapcar #'head lists)))
-             (map-into lists #'cdr lists))))
+    (for (values current found) = (pileup:heap-pop frontier))
+    (unless found
+      (return (values nil nil)))
 
+    (for current-state = (path-state current))
 
-(defun phi (n)
-  "Return `φ(n)` (Euler's totient function)."
-  ;; https://en.wikipedia.org/wiki/Euler%27s_totient_function#Computing_Euler.27s_totient_function
-  (* n (iterate (for p :in (prime-factors n))
-                (multiplying (- 1 (/ p))))))
+    (when (funcall goal-p current-state)
+      (return (values (path-to-list current) t)))
+
+    (for current-cost = (path-cost current))
+
+    (iterate
+      (for next-state :in (funcall neighbors current-state))
+      (for next-cost = (+ current-cost (funcall cost current-state next-state)))
+      (for (values seen-cost previously-seen) = (gethash next-state seen))
+      (when (or (not previously-seen)
+                (< next-cost seen-cost))
+        (for next-estimate = (+ next-cost (funcall heuristic next-state)))
+        (for next = (make-path :state next-state
+                               :cost next-cost
+                               :estimate next-estimate
+                               :previous current))
+        (setf (gethash next-state seen) next-cost)
+        (pileup:heap-insert next frontier)))))
 

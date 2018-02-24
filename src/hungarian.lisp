@@ -24,7 +24,7 @@
   primed-rows
   primed-cols)
 
-(define-with-macro (assignment-problem :conc-name ap)
+(define-with-macro (assignment-problem :conc-name ap-)
   original-matrix
   cost-matrix
   rows

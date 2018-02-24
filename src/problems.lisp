@@ -858,12 +858,12 @@
       (for base :from 1)
       ;; base can't be more than 5 digits long because we have to concatenate at
       ;; least two products of it
-      (while (digits<= base 5))
+      (while (<= (digits-length base) 5))
       (iterate (for n :from 2)
                (for result = (concatenated-product base n))
                ;; result is only ever going to grow larger, so once we pass the
                ;; nine digit mark we can stop
-               (while (digits<= result 9))
+               (while (<= (digits-length result) 9))
                (when (pandigitalp result)
                  (in main (maximizing result)))))))
 
@@ -1725,6 +1725,50 @@
                       (every (rcurry #'subsequencep (digits passcode))
                              attempts)))))
 
+(defun problem-81 ()
+  ;; In the 5 by 5 matrix below, the minimal path sum from the top left to the
+  ;; bottom right, by only moving to the right and down, is indicated in bold
+  ;; red and is equal to 2427.
+  ;;
+  ;; Find the minimal path sum, in matrix.txt, a 31K text file containing a 80
+  ;; by 80 matrix, from the top left to the bottom right by only moving right
+  ;; and down.
+  (let* ((data (convert-to-multidimensional-array
+                 (iterate
+                   (for line :in-csv-file "data/081-matrix.txt"
+                        :key #'parse-integer)
+                   (collect line))))
+         (rows (array-dimension data 0))
+         (cols (array-dimension data 1))
+         (down (vec2 0 1))
+         (right (vec2 1 0))
+         (top-left (vec2 0 0))
+         (bottom-right (vec2 (1- cols) (1- rows)))
+         (minimum-value (iterate (for value :in-array data)
+                                 (minimizing value))))
+    (labels ((value-at (point)
+               (aref data (vy point) (vx point)))
+             (neighbors (point)
+               (remove nil (list (when (< (vx point) (1- cols))
+                                   (vec2+ point right))
+                                 (when (< (vy point) (1- rows))
+                                   (vec2+ point down)))))
+             (remaining-moves (point)
+               (+ (- cols (vx point))
+                  (- rows (vy point))))
+             (heuristic (point)
+               (* minimum-value (remaining-moves point)))
+             (cost (prev point)
+               (declare (ignore prev))
+               (value-at point)))
+      (summation (astar :start top-left
+                        :neighbors #'neighbors
+                        :goal-p (curry #'vec2= bottom-right)
+                        :cost #'cost
+                        :heuristic #'heuristic
+                        :test #'equalp)
+                 :key #'value-at))))
+
 (defun problem-92 ()
   ;; A number chain is created by continuously adding the square of the digits
   ;; in a number to form a new number until it has been seen before.
@@ -2336,6 +2380,7 @@
 (test p69 (is (= 510510 (problem-69))))
 (test p74 (is (= 402 (problem-74))))
 (test p79 (is (= 73162890 (problem-79))))
+(test p81 (is (= 427337 (problem-81))))
 (test p92 (is (= 8581146 (problem-92))))
 (test p97 (is (= 8739992577 (problem-97))))
 (test p99 (is (= 709 (problem-99))))
