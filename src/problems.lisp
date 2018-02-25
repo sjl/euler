@@ -1761,9 +1761,58 @@
              (cost (prev point)
                (declare (ignore prev))
                (value-at point)))
-      (summation (astar :start top-left
+      (summation (astar :start (list top-left)
                         :neighbors #'neighbors
                         :goal-p (curry #'vec2= bottom-right)
+                        :cost #'cost
+                        :heuristic #'heuristic
+                        :test #'equalp)
+                 :key #'value-at))))
+
+(defun problem-82 ()
+  ;; NOTE: This problem is a more challenging version of Problem 81.
+  ;;
+  ;; The minimal path sum in the 5 by 5 matrix below, by starting in any cell in
+  ;; the left column and finishing in any cell in the right column, and only
+  ;; moving up, down, and right, is indicated in red and bold; the sum is equal
+  ;; to 994.
+  ;;
+  ;; Find the minimal path sum, in matrix.txt, a 31K text file containing a 80
+  ;; by 80 matrix, from the left column to the right column.
+  (let* ((data (convert-to-multidimensional-array
+                 (iterate
+                   (for line :in-csv-file "data/082-matrix.txt"
+                        :key #'parse-integer)
+                   (collect line))))
+         (rows (array-dimension data 0))
+         (cols (array-dimension data 1))
+         (up (vec2 0 -1))
+         (down (vec2 0 1))
+         (right (vec2 1 0))
+         (minimum-value (iterate (for value :in-array data)
+                                 (minimizing value))))
+    (labels ((value-at (point)
+               (aref data (vy point) (vx point)))
+             (neighbors (point)
+               (remove nil (list (when (< (vx point) (1- cols))
+                                   (vec2+ point right))
+                                 (when (< 0 (vy point))
+                                   (vec2+ point up))
+                                 (when (< (vy point) (1- rows))
+                                   (vec2+ point down)))))
+             (remaining-moves (point)
+               (+ (- cols (vx point))
+                  (- rows (vy point))))
+             (goalp (point)
+               (= (1- rows) (vx point)))
+             (heuristic (point)
+               (* minimum-value (remaining-moves point)))
+             (cost (prev point)
+               (declare (ignore prev))
+               (value-at point)))
+      (summation (astar :start (mapcar (curry #'vec2 0) (range 0 rows))
+                        :neighbors #'neighbors
+                        :goal-p #'goalp
                         :cost #'cost
                         :heuristic #'heuristic
                         :test #'equalp)
@@ -2381,6 +2430,7 @@
 (test p74 (is (= 402 (problem-74))))
 (test p79 (is (= 73162890 (problem-79))))
 (test p81 (is (= 427337 (problem-81))))
+(test p82 (is (= 260324 (problem-82))))
 (test p92 (is (= 8581146 (problem-92))))
 (test p97 (is (= 8739992577 (problem-97))))
 (test p99 (is (= 709 (problem-99))))

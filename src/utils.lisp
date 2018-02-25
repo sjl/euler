@@ -921,7 +921,7 @@
 ;;;; A* Search ----------------------------------------------------------------
 (defstruct path
   state
-  estimate
+  (estimate 0)
   (cost 0)
   (previous nil))
 
@@ -937,7 +937,7 @@
 
   The following parameters are all required:
 
-  * `start`: the starting state.
+  * `start`: a sequence of starting states.
 
   * `neighbors`: a function that takes a state and returns all states reachable
     from it.
@@ -961,35 +961,37 @@
   the algorithm would end up blowing the heap, which is unpleasant.
 
   "
-  (iterate
-    (with seen = (make-hash-table :test test))
-    (with frontier = (pileup:make-heap #'< :key #'path-estimate))
+  (let ((seen (make-hash-table :test test))
+        (frontier (pileup:make-heap #'< :key #'path-estimate)))
+    (labels ((mark-seen (path)
+               (setf (gethash (path-state path) seen) (path-cost path)))
+             (push-path (path)
+               (mark-seen path)
+               (pileup:heap-insert path frontier)))
+      (iterate
+        (initially (doseq (state start)
+                     (push-path (make-path :state state))))
 
-    (initially (pileup:heap-insert (make-path :state start :estimate 0) frontier)
-               (setf (gethash start seen) 0))
+        (for (values current found) = (pileup:heap-pop frontier))
+        (unless found
+          (return (values nil nil)))
 
-    (for (values current found) = (pileup:heap-pop frontier))
-    (unless found
-      (return (values nil nil)))
+        (for current-state = (path-state current))
 
-    (for current-state = (path-state current))
+        (when (funcall goal-p current-state)
+          (return (values (path-to-list current) t)))
 
-    (when (funcall goal-p current-state)
-      (return (values (path-to-list current) t)))
+        (for current-cost = (path-cost current))
 
-    (for current-cost = (path-cost current))
-
-    (iterate
-      (for next-state :in (funcall neighbors current-state))
-      (for next-cost = (+ current-cost (funcall cost current-state next-state)))
-      (for (values seen-cost previously-seen) = (gethash next-state seen))
-      (when (or (not previously-seen)
-                (< next-cost seen-cost))
-        (for next-estimate = (+ next-cost (funcall heuristic next-state)))
-        (for next = (make-path :state next-state
-                               :cost next-cost
-                               :estimate next-estimate
-                               :previous current))
-        (setf (gethash next-state seen) next-cost)
-        (pileup:heap-insert next frontier)))))
+        (iterate
+          (for next-state :in (funcall neighbors current-state))
+          (for next-cost = (+ current-cost (funcall cost current-state next-state)))
+          (for (values seen-cost previously-seen) = (gethash next-state seen))
+          (when (or (not previously-seen)
+                    (< next-cost seen-cost))
+            (for next-estimate = (+ next-cost (funcall heuristic next-state)))
+            (push-path (make-path :state next-state
+                                  :cost next-cost
+                                  :estimate next-estimate
+                                  :previous current))))))))
 
