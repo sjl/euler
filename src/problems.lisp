@@ -26,7 +26,7 @@
 (defun problem-3 ()
   ;; The prime factors of 13195 are 5, 7, 13 and 29.
   ;;
-  ;; What is the largest prime factor of the number 600851475143 ?
+  ;; What is the largest prime factor of the number 600851475143?
   (apply #'max (prime-factorization 600851475143)))
 
 (defun problem-4 ()
@@ -34,11 +34,18 @@
   ;; from the product of two 2-digit numbers is 9009 = 91 × 99.
   ;;
   ;; Find the largest palindrome made from the product of two 3-digit numbers.
-  (iterate (for-nested ((i :from 0 :to 999)
-                        (j :from 0 :to 999)))
-           (for product = (* i j))
-           (when (palindromep product)
-             (maximize product))))
+  (iterate
+    ;; We COULD brute force this, but it's more fun to do it smartly.
+    (with result = 0)
+    (for i :from 999 :downto 100)
+    (iterate (for j :from i :downto 100)
+             (for product = (* i j))
+             ;; Because we're counting down, we can break in this inner loop as
+             ;; soon as our products drop below the current maximum.
+             (while (>= product (or result 0)))
+             (when (palindromep product)
+               (setf result product)))
+    (finally (return result))))
 
 (defun problem-5 ()
   ;; 2520 is the smallest number that can be divided by each of the numbers from

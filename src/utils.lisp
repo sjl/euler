@@ -196,9 +196,14 @@
 
 (defun binomial-coefficient (n k)
   "Return `n` choose `k`."
-  ;; https://en.wikipedia.org/wiki/Binomial_coefficient#Multiplicative_formula
+  ;; See https://en.wikipedia.org/wiki/Binomial_coefficient#Multiplicative_formula
   (iterate (for i :from 1 :to k)
            (multiplying (math (n + 1 - i) / i))))
+
+(defun multiset-coefficient (n k)
+  "Return `n` multichoose `k`."
+  ;; See https://www.lucamoroni.it/the-dice-roll-sum-problem/ section 2.B
+  (binomial-coefficient (+ n k -1) k))
 
 (defun multiplicative-order (integer modulus)
   "Return the multiplicative order of `integer` modulo `modulus`."
