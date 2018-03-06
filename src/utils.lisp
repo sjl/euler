@@ -932,17 +932,17 @@
       (recur (path-previous path))))
   result)
 
-(defun astar (&key start neighbors goal-p cost heuristic test)
+(defun astar (&key start neighbors goalp cost heuristic test)
   "Search for a path from `start` to a goal using A★.
 
   The following parameters are all required:
 
-  * `start`: a sequence of starting states.
+  * `start`: the starting state.
 
   * `neighbors`: a function that takes a state and returns all states reachable
     from it.
 
-  * `goal-p`: a predicate that takes a state and returns whether it is a goal.
+  * `goalp`: a predicate that takes a state and returns whether it is a goal.
 
   * `cost`: a function that takes two states `a` and `b` and returns the cost
     to move from `a` to `b`.
@@ -969,8 +969,7 @@
                (mark-seen path)
                (pileup:heap-insert path frontier)))
       (iterate
-        (initially (doseq (state start)
-                     (push-path (make-path :state state))))
+        (initially (push-path (make-path :state start)))
 
         (for (values current found) = (pileup:heap-pop frontier))
         (unless found
@@ -978,7 +977,7 @@
 
         (for current-state = (path-state current))
 
-        (when (funcall goal-p current-state)
+        (when (funcall goalp current-state)
           (return (values (path-to-list current) t)))
 
         (for current-cost = (path-cost current))
@@ -994,4 +993,3 @@
                                   :cost next-cost
                                   :estimate next-estimate
                                   :previous current))))))))
-

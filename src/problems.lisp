@@ -1740,18 +1740,20 @@
                    (collect line))))
          (rows (array-dimension data 0))
          (cols (array-dimension data 1))
+         (last-row (1- rows))
+         (last-col (1- cols))
          (down (vec2 0 1))
          (right (vec2 1 0))
          (top-left (vec2 0 0))
-         (bottom-right (vec2 (1- cols) (1- rows)))
+         (bottom-right (vec2 last-col last-row))
          (minimum-value (iterate (for value :in-array data)
                                  (minimizing value))))
     (labels ((value-at (point)
                (aref data (vy point) (vx point)))
              (neighbors (point)
-               (remove nil (list (when (< (vx point) (1- cols))
+               (remove nil (list (when (< (vx point) last-col)
                                    (vec2+ point right))
-                                 (when (< (vy point) (1- rows))
+                                 (when (< (vy point) last-row)
                                    (vec2+ point down)))))
              (remaining-moves (point)
                (+ (- cols (vx point))
@@ -1761,9 +1763,9 @@
              (cost (prev point)
                (declare (ignore prev))
                (value-at point)))
-      (summation (astar :start (list top-left)
+      (summation (astar :start top-left
                         :neighbors #'neighbors
-                        :goal-p (curry #'vec2= bottom-right)
+                        :goalp (curry #'vec2= bottom-right)
                         :cost #'cost
                         :heuristic #'heuristic
                         :test #'equalp)
@@ -1786,36 +1788,43 @@
                    (collect line))))
          (rows (array-dimension data 0))
          (cols (array-dimension data 1))
+         (last-row (1- rows))
+         (last-col (1- cols))
          (up (vec2 0 -1))
          (down (vec2 0 1))
          (right (vec2 1 0))
          (minimum-value (iterate (for value :in-array data)
                                  (minimizing value))))
+    ;; We can still use A*, we just need to do a little hack to allow it to
+    ;; choose anything in the first column as a starting state: we'll make the
+    ;; starting state NIL and make everything in the first column its neighbors.
     (labels ((value-at (point)
                (aref data (vy point) (vx point)))
              (neighbors (point)
-               (remove nil (list (when (< (vx point) (1- cols))
-                                   (vec2+ point right))
-                                 (when (< 0 (vy point))
-                                   (vec2+ point up))
-                                 (when (< (vy point) (1- rows))
-                                   (vec2+ point down)))))
+               (if (null point)
+                 (mapcar (curry #'vec2 0) (range 0 rows))
+                 (remove nil (list (when (< (vx point) last-col)
+                                     (vec2+ point right))
+                                   (when (< 0 (vy point))
+                                     (vec2+ point up))
+                                   (when (< (vy point) last-row)
+                                     (vec2+ point down))))))
              (remaining-moves (point)
                (+ (- cols (vx point))
                   (- rows (vy point))))
              (goalp (point)
-               (= (1- rows) (vx point)))
+               (and point (= last-col (vx point))))
              (heuristic (point)
                (* minimum-value (remaining-moves point)))
              (cost (prev point)
                (declare (ignore prev))
                (value-at point)))
-      (summation (astar :start (mapcar (curry #'vec2 0) (range 0 rows))
-                        :neighbors #'neighbors
-                        :goal-p #'goalp
-                        :cost #'cost
-                        :heuristic #'heuristic
-                        :test #'equalp)
+      (summation (rest (astar :start nil
+                              :neighbors #'neighbors
+                              :goalp #'goalp
+                              :cost #'cost
+                              :heuristic #'heuristic
+                              :test #'equalp))
                  :key #'value-at))))
 
 (defun problem-92 ()
