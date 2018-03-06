@@ -26,7 +26,7 @@
 (defun problem-3 ()
   ;; The prime factors of 13195 are 5, 7, 13 and 29.
   ;;
-  ;; What is the largest prime factor of the number 600851475143 ?
+  ;; What is the largest prime factor of the number 600851475143?
   (apply #'max (prime-factorization 600851475143)))
 
 (defun problem-4 ()
@@ -34,11 +34,18 @@
   ;; from the product of two 2-digit numbers is 9009 = 91 × 99.
   ;;
   ;; Find the largest palindrome made from the product of two 3-digit numbers.
-  (iterate (for-nested ((i :from 0 :to 999)
-                        (j :from 0 :to 999)))
-           (for product = (* i j))
-           (when (palindromep product)
-             (maximize product))))
+  (iterate
+    ;; We COULD brute force this, but it's more fun to do it smartly.
+    (with result = 0)
+    (for i :from 999 :downto 100)
+    (iterate (for j :from i :downto 100)
+             (for product = (* i j))
+             ;; Because we're counting down, we can break in this inner loop as
+             ;; soon as our products drop below the current maximum.
+             (while (>= product (or result 0)))
+             (when (palindromep product)
+               (setf result product)))
+    (finally (return result))))
 
 (defun problem-5 ()
   ;; 2520 is the smallest number that can be divided by each of the numbers from
@@ -386,21 +393,10 @@
   ;; by trying every route. However, Problem 67, is the same challenge with
   ;; a triangle containing one-hundred rows; it cannot be solved by brute force,
   ;; and requires a clever method! ;o)
-  (let ((triangle '((75)
-                    (95 64)
-                    (17 47 82)
-                    (18 35 87 10)
-                    (20 04 82 47 65)
-                    (19 01 23 75 03 34)
-                    (88 02 77 73 07 63 67)
-                    (99 65 04 28 06 16 70 92)
-                    (41 41 26 56 83 40 80 70 33)
-                    (41 48 72 33 47 32 37 16 94 29)
-                    (53 71 44 65 25 43 91 52 97 51 14)
-                    (70 11 33 28 77 73 17 78 39 68 17 57)
-                    (91 71 52 38 17 14 91 43 58 50 27 29 48)
-                    (63 66 04 68 89 53 67 30 73 16 69 87 40 31)
-                    (04 62 98 27 23 09 70 98 73 93 38 53 60 04 23))))
+  (let ((triangle (iterate (for line :in-csv-file "data/018-triangle.txt"
+                                :delimiter #\space
+                                :key #'parse-integer)
+                           (collect line))))
     (car (reduce (lambda (prev last)
                    (mapcar #'+
                            prev
@@ -1597,6 +1593,35 @@
     (iterate (for n :from 1 :below (find-bound))
              (summing (score n)))))
 
+(defun problem-67 ()
+  ;; By starting at the top of the triangle below and moving to adjacent numbers
+  ;; on the row below, the maximum total from top to bottom is 23.
+  ;;
+  ;;    3
+  ;;   7 4
+  ;;  2 4 6
+  ;; 8 5 9 3
+  ;;
+  ;; That is, 3 + 7 + 4 + 9 = 23.
+  ;;
+  ;; Find the maximum total from top to bottom in triangle.txt, a 15K text file
+  ;; containing a triangle with one-hundred rows.
+  ;;
+  ;; NOTE: This is a much more difficult version of Problem 18. It is not
+  ;; possible to try every route to solve this problem, as there are 299
+  ;; altogether! If you could check one trillion (1012) routes every second it
+  ;; would take over twenty billion years to check them all. There is an
+  ;; efficient algorithm to solve it.
+  (car (reduce (lambda (prev last)
+                 (mapcar #'+
+                         prev
+                         (mapcar #'max last (rest last))))
+               (iterate (for line :in-csv-file "data/067-triangle.txt"
+                             :delimiter #\space
+                             :key #'parse-integer)
+                        (collect line))
+               :from-end t)))
+
 (defun problem-69 ()
   ;; Euler's Totient function, φ(n) [sometimes called the phi function], is
   ;; used to determine the number of numbers less than n which are relatively
@@ -2435,6 +2460,7 @@
 (test p61 (is (= 28684 (problem-61))))
 (test p62 (is (= 127035954683 (problem-62))))
 (test p63 (is (= 49 (problem-63))))
+(test p67 (is (= 7273 (problem-67))))
 (test p69 (is (= 510510 (problem-69))))
 (test p74 (is (= 402 (problem-74))))
 (test p79 (is (= 73162890 (problem-79))))
