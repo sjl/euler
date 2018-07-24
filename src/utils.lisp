@@ -65,7 +65,7 @@
     (with-gensyms (i f)
       `(progn
          (with ,f = ,function)
-         (generate ,i ,@(losh::expand-iterate-sequence-keywords))
+         (generate ,i ,@(losh.iterate::expand-iterate-sequence-keywords))
          (,kwd ,var :next (funcall ,f (next ,i)))))))
 
 (defmacro-driver (FOR var IN-LIST list &optional
