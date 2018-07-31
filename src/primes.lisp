@@ -6,25 +6,34 @@
 
 (eval-dammit
   (defun sieve% (limit)
-    "Return a bit vector of primality for all numbers below `limit`."
+    "Return a bit vector of primality for all odd numbers below `limit`."
     (iterate
-      (with numbers = (make-array limit :initial-element 1 :element-type 'bit))
-      (for bit :in-vector numbers :with-index n :from 2)
+      (with length = (truncate limit 2))
+      (with numbers = (make-array length :initial-element 1 :element-type 'bit))
+      (for bit :in-vector numbers :with-index n :from 1)
       (when (= 1 bit)
-        (iterate (for composite :from (* 2 n) :by n :below limit)
-                 (setf (aref numbers composite) 0)))
+        (iterate
+          (with step = (1+ (* 2 n)))
+          (for composite :from (+ n step) :by step :below length)
+          (setf (aref numbers composite) 0)))
       (finally
-        (setf (aref numbers 0) 0
-              (aref numbers 1) 0)
+        (setf (aref numbers 0) 0)
         (return numbers)))))
 
 (defun sieve (limit)
   "Return a vector of all primes below `limit`."
   (declare (optimize speed))
-  (iterate (declare (iterate:declare-variables))
-           (for bit :in-vector (sieve% limit) :with-index n :from 2)
-           (when (= 1 bit)
-             (collect n :result-type vector))))
+  (check-type limit (integer 0 #.array-dimension-limit))
+  (if (< limit 2)
+    (vector)
+    (iterate
+      (declare (iterate:declare-variables))
+      (if-first-time
+        (collect 2 :into result :result-type vector))
+      (for bit :in-vector (sieve% limit) :with-index n :from 1)
+      (when (= 1 bit)
+        (collect (1+ (* 2 n)) :into result :result-type vector))
+      (finally (return result)))))
 
 
 (defun prime-factors (n)
@@ -201,17 +210,17 @@
 
 
 ;;;; Precomputation -----------------------------------------------------------
-;;; We precompute a bit vector of the primality of the first hundred million
+;;; We precompute a bit vector of the primality of the first hundred million odd
 ;;; numbers to make checking primes faster.  It'll take up about 12 mb of memory
 ;;; and take a few seconds to compute, but saves a lot of brute forcing later.
 
-(defconstant +precomputed-primality-limit+ 100000000)
+(defconstant +precomputed-primality-limit+ 200000000)
 
 (defparameter *precomputed-primality-bit-vector*
   (sieve% +precomputed-primality-limit+))
 
 (deftype precomputed-primality-bit-vector ()
-  `(simple-array bit (,+precomputed-primality-limit+)))
+  `(simple-array bit (,(truncate +precomputed-primality-limit+ 2))))
 
 (deftype integer-with-precomputed-primality ()
   `(integer 0 (,+precomputed-primality-limit+)))
@@ -220,7 +229,7 @@
   (declare (optimize speed (debug 0) (safety 1))
            (type integer-with-precomputed-primality n)
            (type precomputed-primality-bit-vector *precomputed-primality-bit-vector*))
-  (not (zerop (aref *precomputed-primality-bit-vector* n))))
+  (not (zerop (aref *precomputed-primality-bit-vector* (truncate n 2)))))
 
 
 (defun primep (n)

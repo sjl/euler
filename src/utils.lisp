@@ -540,6 +540,78 @@
            (counting t)))
 
 
+;;;; Matrices and Vectors -----------------------------------------------------
+(defun count-rows (matrix)
+  (array-dimension matrix 0))
+
+(defun count-cols (matrix)
+  (array-dimension matrix 1))
+
+(defun mat* (m n)
+  (assert (= (count-cols m) (count-rows n))
+      () "Cannot multiply incompatibly-sized matrices.")
+  (let ((rows (count-rows m))
+        (cols (count-cols n)))
+    (iterate
+      (with numbers = (count-cols m))
+      (with result = (make-array (list rows cols) :element-type 'number))
+      (for-nested ((row :from 0 :below rows)
+                   (col :from 0 :below cols)))
+      (setf (aref result row col)
+            (iterate (for i :below numbers)
+                     (summing (* (aref m row i)
+                                 (aref n i col)))))
+      (finally (return result)))))
+
+(defun mv* (matrix vector)
+  (iterate
+    (with (rows cols) = (array-dimensions matrix))
+    (initially (assert (= cols (length vector))))
+    (with result = (make-array rows :initial-element 0))
+    (for row :from 0 :below rows)
+    (iterate (for col :from 0 :below cols)
+             (for v = (aref vector col))
+             (for a = (aref matrix row col))
+             (incf (aref result row)
+                   (* v a)))
+    (finally (return result))))
+
+
+(defun mat2 (a b c d)
+  (let ((result (make-array (list 2 2) :element-type 'number)))
+    (setf (aref result 0 0) a
+          (aref result 0 1) b
+          (aref result 1 0) c
+          (aref result 1 1) d)
+    result))
+
+
+(defun vec2 (x y)
+  (vector x y))
+
+(defun vx (vec2)
+  (aref vec2 0))
+
+(defun vy (vec2)
+  (aref vec2 1))
+
+(defun vec2+ (a b)
+  (vec2 (+ (vx a) (vx b))
+        (+ (vy a) (vy b))))
+
+(defun vec2- (a b)
+  (vec2 (- (vx a) (vx b))
+        (- (vy a) (vy b))))
+
+(defun vec2-dot (a b)
+  (+ (* (vx a) (vx b))
+     (* (vy a) (vy b))))
+
+(defun vec2= (a b)
+  (and (= (vx a) (vx b))
+       (= (vy a) (vy b))))
+
+
 ;;;; Fibonacci ----------------------------------------------------------------
 (defmacro-driver (FOR var IN-FIBONACCI _)
   (declare (ignore _))
@@ -557,6 +629,24 @@
   (iterate (repeat n)
            (for i :in-fibonacci t)
            (collect i)))
+
+(defun nth-fibonacci (n)
+  ;; https://blog.paulhankin.net/fibonacci/
+  (labels
+      ((mexpt (matrix exponent)
+         (cond ((zerop exponent) (mat2 1 0 0 1))
+               ((= 1 exponent) matrix)
+               ((evenp exponent)
+                (mexpt (mat* matrix matrix)
+                       (truncate exponent 2)))
+               (t (mat* matrix
+                        (mexpt (mat* matrix matrix)
+                               (truncate exponent 2)))))))
+    (-<> (mat2 1 1
+               1 0)
+      (mexpt <> n)
+      (mv* <> (vec2 1 1))
+      (aref <> 1))))
 
 
 ;;;; Factorial ----------------------------------------------------------------
@@ -691,18 +781,6 @@
 (define-modify-macro adjoinf (item &rest keyword-args) adjoin%)
 
 
-(defun mv* (matrix vector)
-  (iterate
-    (with (rows cols) = (array-dimensions matrix))
-    (initially (assert (= cols (length vector))))
-    (with result = (make-array rows :initial-element 0))
-    (for row :from 0 :below rows)
-    (iterate (for col :from 0 :below cols)
-             (for v = (aref vector col))
-             (for a = (aref matrix row col))
-             (incf (aref result row)
-                   (* v a)))
-    (finally (return result))))
 
 
 (defun pythagorean-triplet-p (a b c)
@@ -895,32 +973,6 @@
   "
   (* precision (round number precision)))
 
-
-;;;; Yet Another Vec2 Implementation™ -----------------------------------------
-(defun vec2 (x y)
-  (vector x y))
-
-(defun vx (vec2)
-  (aref vec2 0))
-
-(defun vy (vec2)
-  (aref vec2 1))
-
-(defun vec2+ (a b)
-  (vec2 (+ (vx a) (vx b))
-        (+ (vy a) (vy b))))
-
-(defun vec2- (a b)
-  (vec2 (- (vx a) (vx b))
-        (- (vy a) (vy b))))
-
-(defun vec2-dot (a b)
-  (+ (* (vx a) (vx b))
-     (* (vy a) (vy b))))
-
-(defun vec2= (a b)
-  (and (= (vx a) (vx b))
-       (= (vy a) (vy b))))
 
 
 ;;;; A* Search ----------------------------------------------------------------
