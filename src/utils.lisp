@@ -167,6 +167,30 @@
                          (cl-strings:split l ,delimiter%))))
            (,kwd ,var :next (parse-line (next-line))))))))
 
+(defmacro-driver (FOR var IN-FAREY-SEQUENCE n)
+  "Iterate `var` through the Farey sequence Fₙ in ascending order.
+
+  The Farey sequence Fₙ is the sorted sequence of all reduced fractions between
+  0 and 1 (inclusive) with denominators ≤ `n`.
+
+  Example:
+
+    (iterate (for x :in-farey-sequence 5) (collect x))
+    ; =>
+    (0 1/5 1/4 1/3 2/5 1/2 3/5 2/3 3/4 4/5 1)
+
+  "
+  (with-gensyms (n% prev)
+    (let ((kwd (if generate 'generate 'for)))
+      `(progn
+         (with ,n% = ,n)
+         (with ,prev = 0)
+         (,kwd ,var :do-next
+          (if-first-time
+            (setf ,var 0)
+            (psetf ,var (or (next-farey-term ,prev ,var ,n%) (terminate))
+                   ,prev ,var)))))))
+
 
 (defmacro when-first-time (&body body)
   `(if-first-time
@@ -344,6 +368,16 @@
          (w (/ (- (* d00 d21) (* d01 d20)) denom))
          (u (- 1 v w)))
     (values u v w)))
+
+(defun mediant (x y)
+  "Return the mediant of `x` and `y`."
+  ;; The mediant operation is:
+  ;;
+  ;; A   C   A + C
+  ;; - ⊕ - = -----
+  ;; B   D   B + D
+  (/ (+ (numerator x) (numerator y))
+     (+ (denominator x) (denominator y))))
 
 
 ;;;; Digits -------------------------------------------------------------------
@@ -781,8 +815,6 @@
 (define-modify-macro adjoinf (item &rest keyword-args) adjoin%)
 
 
-
-
 (defun pythagorean-triplet-p (a b c)
   (math a ^ 2 + b ^ 2 = c ^ 2))
 
@@ -816,6 +848,40 @@
         (recur (mv* u triple))
         (recur (mv* a triple))
         (recur (mv* d triple))))))
+
+
+;;;; Farey Sequences ----------------------------------------------------------
+(defun next-farey-term (x y n)
+  "Return the next term in the Farey sequence Fₙ after `x` and `y`, or `nil`.
+
+  For convenience, if `y` is zero `x` is not examined.
+
+  If `y` is `1` the sequence is complete and `nil` is returned.
+
+  "
+  (declare (type (rational 0 1) x y)
+           (type (integer 1) n))
+  (case y
+    (0 (/ 1 n))
+    (1 nil)
+    (t (let* ((a (numerator x))
+              (b (denominator x))
+              (c (numerator y))
+              (d (denominator y))
+              (k (floor (+ n b) d))
+              (p (- (* k c) a))
+              (q (- (* k d) b)))
+         (/ p q)))))
+
+(defun farey (n)
+  "Return the Farey sequence Fₙ as a fresh list."
+  (iterate (for x :in-farey-sequence n)
+           (collect x)))
+
+(defun approximate-farey-length (n)
+  "Return an approximation of the length of the Farey sequence Fₙ."
+  (/ (* 3 (expt n 2))
+     (expt pi 2)))
 
 
 ;;;; Geometric Numbers --------------------------------------------------------
@@ -972,7 +1038,6 @@
 
   "
   (* precision (round number precision)))
-
 
 
 ;;;; A* Search ----------------------------------------------------------------

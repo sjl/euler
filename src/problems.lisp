@@ -1592,6 +1592,60 @@
     (while (<= n 1000000))
     (finally (return result))))
 
+(defun problem-71 ()
+  ;; Consider the fraction, n/d, where n and d are positive integers. If n<d and
+  ;; HCF(n,d)=1, it is called a reduced proper fraction.
+  ;;
+  ;; If we list the set of reduced proper fractions for d ≤ 8 in ascending order
+  ;; of size, we get:
+  ;;
+  ;; 1/8, 1/7, 1/6, 1/5, 1/4, 2/7, 1/3, 3/8, 2/5, 3/7, 1/2, 4/7, 3/5, 5/8, 2/3,
+  ;; 5/7, 3/4, 4/5, 5/6, 6/7, 7/8
+  ;;
+  ;; It can be seen that 2/5 is the fraction immediately to the left of 3/7.
+  ;;
+  ;; By listing the set of reduced proper fractions for d ≤ 1,000,000 in
+  ;; ascending order of size, find the numerator of the fraction immediately to
+  ;; the left of 3/7.
+  (iterate
+    ;; We could theoretically iterate through F_1000000 til we find 3/7, but
+    ;; we'd have about 130000000000 elements to churn though.  We can do it much
+    ;; faster.
+    ;;
+    ;; Instead, we start by computing F₇ and finding 3/7 and whatever's to the
+    ;; left of it.  We can find what's in between these two in the next
+    ;; iteration by taking their mediant, then just repeat until we hit the
+    ;; limit.
+    (with limit = 1000000)
+    (with target = 3/7)
+    (with guess = (iterate (for x :in-farey-sequence (denominator target))
+                           (for px :previous x)
+                           (finding px :such-that (= x target))))
+    (for next = (mediant guess target))
+    (if (> (denominator next) limit)
+      (return (numerator guess))
+      (setf guess next))))
+
+(defun problem-73 ()
+  ;; Consider the fraction, n/d, where n and d are positive integers. If n<d and
+  ;; HCF(n,d)=1, it is called a reduced proper fraction.
+  ;;
+  ;; If we list the set of reduced proper fractions for d ≤ 8 in ascending order
+  ;; of size, we get:
+  ;;
+  ;; 1/8, 1/7, 1/6, 1/5, 1/4, 2/7, 1/3, 3/8, 2/5, 3/7, 1/2, 4/7, 3/5, 5/8, 2/3,
+  ;; 5/7, 3/4, 4/5, 5/6, 6/7, 7/8
+  ;;
+  ;; It can be seen that there are 3 fractions between 1/3 and 1/2.
+  ;;
+  ;; How many fractions lie between 1/3 and 1/2 in the sorted set of reduced
+  ;; proper fractions for d ≤ 12,000?
+  (iterate
+    ;; Just brute force this one with our fancy Farey sequence iterator.
+    (for x :in-farey-sequence 12000)
+    (while (< x 1/2))
+    (counting (< 1/3 x))))
+
 (defun problem-74 ()
   ;; The number 145 is well known for the property that the sum of the factorial
   ;; of its digits is equal to 145:
@@ -2365,6 +2419,8 @@
 (test p63 (is (= 49 (problem-63))))
 (test p67 (is (= 7273 (problem-67))))
 (test p69 (is (= 510510 (problem-69))))
+(test p71 (is (= 428570 (problem-71))))
+(test p73 (is (= 7295372 (problem-73))))
 (test p74 (is (= 402 (problem-74))))
 (test p79 (is (= 73162890 (problem-79))))
 (test p81 (is (= 427337 (problem-81))))
