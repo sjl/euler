@@ -1,5 +1,19 @@
 (in-package :euler)
 
+;;;; Problems -----------------------------------------------------------------
+(defun run-tests ()
+  (1am:run))
+
+(defmacro define-problem ((number &optional solution) &body body)
+  (let ((name (symb 'problem- number)))
+    `(progn
+       (defun ,name () ,@body)
+       ,@(when solution
+           `((1am:test ,(symb 'test- name)
+               (1am:is (= ,solution (,name))))))
+       ',name)))
+
+
 ;;;; Iterate ------------------------------------------------------------------
 (defmacro-driver (FOR var ITERATING function SEED value &optional
                   INCLUDE-SEED include-seed?)
@@ -164,7 +178,7 @@
                     ,line%)
                   (parse-line (l)
                     (map ,result-type% ,key%
-                         (cl-strings:split l ,delimiter%))))
+                         (str:split ,delimiter% l))))
            (,kwd ,var :next (parse-line (next-line))))))))
 
 
@@ -781,8 +795,6 @@
 (define-modify-macro adjoinf (item &rest keyword-args) adjoin%)
 
 
-
-
 (defun pythagorean-triplet-p (a b c)
   (math a ^ 2 + b ^ 2 = c ^ 2))
 
@@ -972,7 +984,6 @@
 
   "
   (* precision (round number precision)))
-
 
 
 ;;;; A* Search ----------------------------------------------------------------

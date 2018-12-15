@@ -1,12 +1,15 @@
 (defpackage :euler
-  (:use
-    :cl
-    :iterate
-    :losh
-    :euler.quickutils)
-  (:import-from :1am :is)
-  (:shadowing-import-from :1am :test)
-  (:export :run-tests))
+  (:use :cl :iterate :losh :euler.quickutils)
+  (:export
+    :*use*
+    :run-tests
+
+    :define-problem
+
+    :prime-factorization
+    :irange
+
+    ))
 
 (defpackage :euler.poker
   (:use
@@ -18,11 +21,13 @@
     :euler.quickutils))
 
 (defpackage :euler.hungarian
-  (:use
-    :cl
-    :iterate
-    :losh
-    :euler
-    :euler.quickutils)
+  (:use :cl :euler :iterate :losh :euler.quickutils)
   (:export
     :find-minimal-assignment))
+
+(defparameter euler:*use* '(:use
+                             :cl
+                             :euler
+                             :iterate
+                             :losh
+                             :euler.quickutils))

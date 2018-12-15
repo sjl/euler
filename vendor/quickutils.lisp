@@ -2,7 +2,7 @@
 ;;;; See http://quickutil.org for details.
 
 ;;;; To regenerate:
-;;;; (qtlc:save-utils-as "quickutils.lisp" :utilities '(:COMPOSE :COPY-ARRAY :CURRY :DEFINE-CONSTANT :EMPTYP :ENSURE-BOOLEAN :ENSURE-FUNCTION :ENSURE-GETHASH :EQUIVALENCE-CLASSES :MAP-COMBINATIONS :MAP-PERMUTATIONS :MAXF :MINF :N-GRAMS :RANGE :RCURRY :READ-FILE-INTO-STRING :REMOVEF :SWITCH :WITH-GENSYMS) :ensure-package T :package "EULER.QUICKUTILS")
+;;;; (qtlc:save-utils-as "quickutils.lisp" :utilities '(:COMPOSE :COPY-ARRAY :CURRY :DEFINE-CONSTANT :EMPTYP :ENSURE-BOOLEAN :ENSURE-FUNCTION :ENSURE-GETHASH :EQUIVALENCE-CLASSES :MAP-COMBINATIONS :MAP-PERMUTATIONS :MAXF :MINF :N-GRAMS :RANGE :RCURRY :READ-FILE-INTO-STRING :REMOVEF :SWITCH :SYMB :WITH-GENSYMS) :ensure-package T :package "EULER.QUICKUTILS")
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (unless (find-package "EULER.QUICKUTILS")
@@ -23,7 +23,8 @@
                                          :WITH-OPEN-FILE* :WITH-INPUT-FROM-FILE
                                          :READ-FILE-INTO-STRING :REMOVEF
                                          :STRING-DESIGNATOR :WITH-GENSYMS
-                                         :EXTRACT-FUNCTION-NAME :SWITCH))))
+                                         :EXTRACT-FUNCTION-NAME :SWITCH :MKSTR
+                                         :SYMB))))
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defun make-gensym-list (length &optional (x "G"))
     "Returns a list of `length` gensyms, each generated as if with a call to `make-gensym`,
@@ -543,11 +544,28 @@ returns the values of `default` if no keys match."
     "Like `switch`, but signals a continuable error if no key matches."
     (generate-switch-body whole object clauses test key '(cerror "Return NIL from CSWITCH.")))
   
+
+  (defun mkstr (&rest args)
+    "Receives any number of objects (string, symbol, keyword, char, number), extracts all printed representations, and concatenates them all into one string.
+
+Extracted from _On Lisp_, chapter 4."
+    (with-output-to-string (s)
+      (dolist (a args) (princ a s))))
+  
+
+  (defun symb (&rest args)
+    "Receives any number of objects, concatenates all into one string with `#'mkstr` and converts them to symbol.
+
+Extracted from _On Lisp_, chapter 4.
+
+See also: `symbolicate`"
+    (values (intern (apply #'mkstr args))))
+  
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (export '(compose copy-array curry define-constant emptyp ensure-boolean
             ensure-function ensure-gethash equivalence-classes map-combinations
             map-permutations maxf minf n-grams range rcurry
-            read-file-into-string removef switch eswitch cswitch with-gensyms
-            with-unique-names)))
+            read-file-into-string removef switch eswitch cswitch symb
+            with-gensyms with-unique-names)))
 
 ;;;; END OF quickutils.lisp ;;;;
