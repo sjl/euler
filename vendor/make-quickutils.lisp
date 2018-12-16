@@ -23,6 +23,7 @@
                :read-file-into-string
                :removef
                :switch
+               :symb
                :with-gensyms
 
                )

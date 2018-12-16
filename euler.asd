@@ -1,3 +1,14 @@
+(defclass auto-module (module) ())
+
+(defmethod component-children ((self auto-module))
+  (mapcar (lambda (p) (make-instance 'cl-source-file :type "lisp"
+                        :pathname p
+                        :name (pathname-name p)
+                        :parent (component-parent self)))
+          (directory-files (component-pathname self)
+                           (make-pathname :directory nil :name *wild* :type "lisp"))))
+
+
 (asdf:defsystem :euler
   :name "euler"
   :description "Project Euler solutions."
@@ -13,11 +24,11 @@
                :1am
                :anaphora
                :cl-pcg
-               :cl-strings
                :iterate
                :local-time
                :losh
                :pileup
+               :str
 
                )
 
@@ -32,5 +43,6 @@
                              (:file "utils")
                              (:file "hungarian")
                              (:file "problems")
-                             (:file "poker")))))
+                             (:file "poker")
+                             (:auto-module "problems")))))
 
