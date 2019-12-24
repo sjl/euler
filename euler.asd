@@ -27,6 +27,7 @@
                :iterate
                :local-time
                :losh
+               :lparallel
                :pileup
                :str
 
@@ -42,7 +43,6 @@
                              (:file "math")
                              (:file "utils")
                              (:file "hungarian")
-                             (:file "problems")
                              (:file "poker")
                              (:auto-module "problems")))))
 

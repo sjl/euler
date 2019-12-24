@@ -830,7 +830,9 @@
 
 
 (defun pythagorean-triplet-p (a b c)
-  (math a ^ 2 + b ^ 2 = c ^ 2))
+  (= (+ (square a)
+        (square b))
+     (square c)))
 
 (defun pythagorean-triplets-of-perimeter (p)
   (iterate
@@ -840,8 +842,7 @@
       (for a :from 1 :below (min c (- p c)))
       (for b = (- p c a))
       (when (pythagorean-triplet-p a b c)
-        (adjoinf result (sort< (list a b c))
-                 :test #'equal)))
+        (adjoinf result (sort< (list a b c)) :test #'equal)))
     (finally (return result))))
 
 

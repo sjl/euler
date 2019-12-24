@@ -6,8 +6,11 @@
 
     :define-problem
 
-    :prime-factorization
     :irange
+    :nth-prime
+    :palindromep
+    :prime-factorization
+    :pythagorean-triplets-of-perimeter
 
     ))
 

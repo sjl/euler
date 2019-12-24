@@ -1,36 +1,5 @@
 (in-package :euler)
 
-(defun problem-7 ()
-  ;; By listing the first six prime numbers: 2, 3, 5, 7, 11, and 13, we can see
-  ;; that the 6th prime is 13.
-  ;;
-  ;; What is the 10 001st prime number?
-  (nth-prime 10001))
-
-(defun problem-8 ()
-  ;; The four adjacent digits in the 1000-digit number that have the greatest
-  ;; product are 9 × 9 × 8 × 9 = 5832.
-  ;;
-  ;; Find the thirteen adjacent digits in the 1000-digit number that have the
-  ;; greatest product. What is the value of this product?
-  (let ((digits (map 'list #'digit-char-p
-                     (remove #\newline
-                             (read-file-into-string "data/008-number.txt")))))
-    (iterate (for window :in (n-grams 13 digits))
-             (maximize (apply #'* window)))))
-
-(defun problem-9 ()
-  ;; A Pythagorean triplet is a set of three natural numbers, a < b < c, for
-  ;; which:
-  ;;
-  ;;   a² + b² = c²
-  ;;
-  ;; For example, 3² + 4² = 9 + 16 = 25 = 5².
-  ;;
-  ;; There exists exactly one Pythagorean triplet for which a + b + c = 1000.
-  ;; Find the product abc.
-  (product (first (pythagorean-triplets-of-perimeter 1000))))
-
 (defun problem-10 ()
   ;; The sum of the primes below 10 is 2 + 3 + 5 + 7 = 17.
   ;; Find the sum of all the primes below two million.
@@ -2265,9 +2234,6 @@
 
 
 ;;;; Tests --------------------------------------------------------------------
-(test p7 (is (= 104743 (problem-7))))
-(test p8 (is (= 23514624000 (problem-8))))
-(test p9 (is (= 31875000 (problem-9))))
 (test p10 (is (= 142913828922 (problem-10))))
 (test p11 (is (= 70600674 (problem-11))))
 (test p12 (is (= 76576500 (problem-12))))
